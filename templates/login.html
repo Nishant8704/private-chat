@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Private Chat — Secure Login</title>
+    <meta name="description" content="Secure private messaging for two. Login to your encrypted chat.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="login-page">
+    <!-- Animated background particles -->
+    <div class="login-bg-particles">
+        <div class="particle particle-1"></div>
+        <div class="particle particle-2"></div>
+        <div class="particle particle-3"></div>
+        <div class="particle particle-4"></div>
+        <div class="particle particle-5"></div>
+        <div class="particle particle-6"></div>
+    </div>
+
+    <div class="login-container">
+        <div class="login-card">
+            <!-- App branding -->
+            <div class="login-brand">
+                <div class="login-icon">
+                    <svg width="48" height="48" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <rect x="4" y="4" width="40" height="40" rx="12" fill="url(#lockGrad)" fill-opacity="0.15"/>
+                        <path d="M24 14C20.686 14 18 16.686 18 20V22H16C14.896 22 14 22.896 14 24V34C14 35.104 14.896 36 16 36H32C33.104 36 34 35.104 34 34V24C34 22.896 33.104 22 32 22H30V20C30 16.686 27.314 14 24 14ZM22 20C22 18.896 22.896 18 24 18C25.104 18 26 18.896 26 20V22H22V20ZM25 30.722V33H23V30.722C22.406 30.376 22 29.734 22 29C22 27.896 22.896 27 24 27C25.104 27 26 27.896 26 29C26 29.734 25.594 30.376 25 30.722Z" fill="url(#lockGrad)"/>
+                        <defs>
+                            <linearGradient id="lockGrad" x1="4" y1="4" x2="44" y2="44" gradientUnits="userSpaceOnUse">
+                                <stop stop-color="#00a884"/>
+                                <stop offset="1" stop-color="#25d366"/>
+                            </linearGradient>
+                        </defs>
+                    </svg>
+                </div>
+                <h1 class="login-title">Private Chat</h1>
+                <p class="login-subtitle">Secure messaging for two</p>
+            </div>
+
+            <!-- Error messages -->
+            {% if error %}
+            <div class="error-message">
+                <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                    <path d="M8 1C4.134 1 1 4.134 1 8s3.134 7 7 7 7-3.134 7-7S11.866 1 8 1zm0 10.5a.75.75 0 110-1.5.75.75 0 010 1.5zM8.75 8a.75.75 0 01-1.5 0V5a.75.75 0 011.5 0v3z"/>
+                </svg>
+                <span>{{ error }}</span>
+            </div>
+            {% endif %}
+
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    {% for message in messages %}
+                    <div class="error-message">
+                        <svg width="16" height="16" viewBox="0 0 16 16" fill="currentColor">
+                            <path d="M8 1C4.134 1 1 4.134 1 8s3.134 7 7 7 7-3.134 7-7S11.866 1 8 1zm0 10.5a.75.75 0 110-1.5.75.75 0 010 1.5zM8.75 8a.75.75 0 01-1.5 0V5a.75.75 0 011.5 0v3z"/>
+                        </svg>
+                        <span>{{ message }}</span>
+                    </div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <!-- Login form -->
+            <form class="login-form" method="POST" action="/">
+                <div class="form-group">
+                    <div class="input-wrapper">
+                        <svg class="input-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10 10a4 4 0 100-8 4 4 0 000 8zm0 2c-4.418 0-8 1.79-8 4v1a1 1 0 001 1h14a1 1 0 001-1v-1c0-2.21-3.582-4-8-4z"/>
+                        </svg>
+                        <input 
+                            type="text" 
+                            id="username" 
+                            name="username" 
+                            class="form-input" 
+                            placeholder="Username" 
+                            autocomplete="username"
+                            required 
+                            autofocus
+                        >
+                        <div class="input-focus-line"></div>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <div class="input-wrapper">
+                        <svg class="input-icon" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                            <path d="M10 2a4 4 0 00-4 4v2H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-1V6a4 4 0 00-4-4zm-2 6V6a2 2 0 114 0v2H8zm2 5a1.5 1.5 0 100-3 1.5 1.5 0 000 3z"/>
+                        </svg>
+                        <input 
+                            type="password" 
+                            id="password" 
+                            name="password" 
+                            class="form-input" 
+                            placeholder="Password" 
+                            autocomplete="current-password"
+                            required
+                        >
+                        <div class="input-focus-line"></div>
+                    </div>
+                </div>
+
+                <button type="submit" class="login-btn" id="login-button">
+                    <span class="btn-text">Sign In</span>
+                    <svg class="btn-arrow" width="20" height="20" viewBox="0 0 20 20" fill="currentColor">
+                        <path fill-rule="evenodd" d="M10.293 3.293a1 1 0 011.414 0l6 6a1 1 0 010 1.414l-6 6a1 1 0 01-1.414-1.414L14.586 11H3a1 1 0 110-2h11.586l-4.293-4.293a1 1 0 010-1.414z"/>
+                    </svg>
+                </button>
+            </form>
+
+            <div class="login-footer">
+                <svg width="14" height="14" viewBox="0 0 14 14" fill="currentColor" opacity="0.5">
+                    <path d="M7 0C3.134 0 0 3.134 0 7s3.134 7 7 7 7-3.134 7-7S10.866 0 7 0zm0 2a2.5 2.5 0 012.5 2.5V6h-5V4.5A2.5 2.5 0 017 2zm3 10H4a1 1 0 01-1-1V8a1 1 0 011-1h6a1 1 0 011 1v3a1 1 0 01-1 1z"/>
+                </svg>
+                <span>End-to-end private connection</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,28 @@
+# Virtual environment
+venv/
+
+# Database
+database/chat.db
+
+# Uploaded profile pictures
+static/uploads/profile_pics/*.png
+static/uploads/profile_pics/*.jpg
+static/uploads/profile_pics/*.jpeg
+static/uploads/profile_pics/*.gif
+static/uploads/profile_pics/*.webp
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+
+# OS
+.DS_Store
+Thumbs.db
