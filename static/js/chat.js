@@ -749,58 +749,64 @@ if (searchInput) {
 }
 
 // --- Profile Picture Modal ---
-headerAvatarBtn.addEventListener('click', openProfileModal);
+if (headerAvatarBtn) headerAvatarBtn.addEventListener('click', openProfileModal);
 
-modalCloseBtn.addEventListener('click', closeProfileModal);
+if (modalCloseBtn) modalCloseBtn.addEventListener('click', closeProfileModal);
 
 // Close modal when clicking overlay background
-profileModal.addEventListener('click', (e) => {
-    if (e.target === profileModal) {
-        closeProfileModal();
-    }
-});
+if (profileModal) {
+    profileModal.addEventListener('click', (e) => {
+        if (e.target === profileModal) {
+            closeProfileModal();
+        }
+    });
+}
 
 // File input change — preview and enable upload
-fileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        fileName.textContent = file.name;
-        uploadBtn.disabled = false;
+if (fileInput) {
+    fileInput.addEventListener('change', (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            fileName.textContent = file.name;
+            uploadBtn.disabled = false;
 
-        // Preview the selected image
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-            modalPreviewImg.src = ev.target.result;
-        };
-        reader.readAsDataURL(file);
-    } else {
-        fileName.textContent = 'No file selected';
-        uploadBtn.disabled = true;
-    }
-});
+            // Preview the selected image
+            const reader = new FileReader();
+            reader.onload = (ev) => {
+                modalPreviewImg.src = ev.target.result;
+            };
+            reader.readAsDataURL(file);
+        } else {
+            fileName.textContent = 'No file selected';
+            uploadBtn.disabled = true;
+        }
+    });
+}
 
 // Upload form submission
-uploadForm.addEventListener('submit', (e) => {
-    e.preventDefault();
-    const file = fileInput.files[0];
-    if (file) {
-        uploadProfilePic(file);
-    }
-});
+if (uploadForm) {
+    uploadForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        const file = fileInput.files[0];
+        if (file) {
+            uploadProfilePic(file);
+        }
+    });
+}
 
 // --- Keyboard shortcut: Escape to close overlays ---
 document.addEventListener('keydown', (e) => {
     if (e.key === 'Escape') {
-        if (settingsModal && settingsModal.classList.contains('active')) {
+        if (typeof settingsModal !== 'undefined' && settingsModal && settingsModal.classList.contains('active')) {
             closeSettingsModal();
-        } else if (profileModal.classList.contains('active')) {
+        } else if (profileModal && profileModal.classList.contains('active')) {
             closeProfileModal();
-        } else if (emojiPicker.classList.contains('active')) {
+        } else if (emojiPicker && emojiPicker.classList.contains('active')) {
             emojiPicker.classList.remove('active');
-            emojiBtn.classList.remove('active');
-        } else if (searchPanel.classList.contains('active')) {
+            if (emojiBtn) emojiBtn.classList.remove('active');
+        } else if (searchPanel && searchPanel.classList.contains('active')) {
             searchPanel.classList.remove('active');
-            searchInput.value = '';
+            if (searchInput) searchInput.value = '';
             clearSearchHighlights();
         }
     }
