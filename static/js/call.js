@@ -1,18 +1,9 @@
 /**
- * call.js — Chat-Based Jitsi Meet API Integration
+ * call.js — Chat-Based Jitsi Meet (New Tab)
  */
-
-let callType = null;
-let isInCall = false;
-let jitsiApi = null;
 
 const audioCallBtn = document.getElementById('audio-call-btn');
 const videoCallBtn = document.getElementById('video-call-btn');
-const activeCallScreen = document.getElementById('active-call-screen');
-const callUserName = document.getElementById('call-user-name');
-const callStatus = document.getElementById('call-status');
-const endCallBtn = document.getElementById('end-call-btn');
-const jitsiContainer = document.getElementById('jitsi-container');
 
 // Ensure deterministic room name
 function getRoomName() {
@@ -21,11 +12,6 @@ function getRoomName() {
 }
 
 function startCall(type) {
-    if (isInCall) {
-        console.warn('Already in a call');
-        return;
-    }
-
     // Send the chat message invite automatically
     const inviteMessage = `[SYSTEM_CALL_INVITE_${type.toUpperCase()}]`;
     socket.emit('send_message', {
@@ -38,64 +24,9 @@ function startCall(type) {
 
 // Global function exposed so chat.js can call it when a button is clicked
 window.joinCallFromInvite = function(type) {
-    if (isInCall) return;
-    callType = type;
-    showActiveCallScreen(type);
-    callStatus.textContent = 'Connected';
-    initJitsiMeet(type);
-}
-
-function initJitsiMeet(type) {
-    if (jitsiApi) {
-        jitsiApi.dispose();
-    }
-
-    const domain = 'meet.ffmuc.net';
-    const options = {
-        roomName: getRoomName(),
-        width: '100%',
-        height: '100%',
-        parentNode: jitsiContainer,
-        userInfo: {
-            displayName: CURRENT_USER
-        },
-        configOverwrite: {
-            startWithAudioMuted: false,
-            startWithVideoMuted: type === 'audio',
-            prejoinPageEnabled: false,
-            disableDeepLinking: true
-        },
-        interfaceConfigOverwrite: {
-            SHOW_CHROME_EXTENSION_BANNER: false
-        }
-    };
-
-    jitsiApi = new JitsiMeetExternalAPI(domain, options);
-    
-    jitsiApi.addEventListener('videoConferenceLeft', () => {
-        endCall();
-    });
-}
-
-function showActiveCallScreen(type) {
-    isInCall = true;
-    activeCallScreen.classList.add('active');
-    callUserName.textContent = OTHER_USER;
-    jitsiContainer.innerHTML = '';
-}
-
-function endCall() {
-    if (!isInCall) return;
-    isInCall = false;
-
-    if (jitsiApi) {
-        jitsiApi.dispose();
-        jitsiApi = null;
-    }
-
-    jitsiContainer.innerHTML = '';
-    activeCallScreen.classList.remove('active');
-    callType = null;
+    // Open the free Jitsi meeting in a new tab to bypass all iframe and camera security blocks
+    const url = `https://meet.ffmuc.net/${getRoomName()}#config.startWithVideoMuted=${type === 'audio' ? 'true' : 'false'}`;
+    window.open(url, '_blank');
 }
 
 if (audioCallBtn) {
@@ -105,13 +36,3 @@ if (audioCallBtn) {
 if (videoCallBtn) {
     videoCallBtn.addEventListener('click', () => startCall('video'));
 }
-
-if (endCallBtn) {
-    endCallBtn.addEventListener('click', () => endCall());
-}
-
-window.addEventListener('beforeunload', () => {
-    if (isInCall) {
-        endCall();
-    }
-});
