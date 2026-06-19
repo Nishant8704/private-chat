@@ -139,15 +139,17 @@ def save_message(sender, receiver, message):
     }
 
 
-def get_chat_history(user1, user2):
+def get_chat_history(user1, user2, limit=50, offset=0):
     """
-    Retrieve all non-deleted messages between two users.
+    Retrieve all non-deleted messages between two users with pagination.
 
-    Messages are returned in chronological order (oldest first).
+    Messages are returned in chronological order (oldest first) within the batch.
 
     Args:
         user1 (str): First user's username.
         user2 (str): Second user's username.
+        limit (int): Maximum number of messages to return.
+        offset (int): Number of recent messages to skip.
 
     Returns:
         list[dict]: List of message dictionaries ordered by timestamp.
@@ -157,13 +159,16 @@ def get_chat_history(user1, user2):
         '''SELECT * FROM messages
            WHERE ((sender = ? AND receiver = ?) OR (sender = ? AND receiver = ?))
            AND is_deleted = 0
-           ORDER BY timestamp ASC''',
-        (user1, user2, user2, user1)
+           ORDER BY timestamp DESC
+           LIMIT ? OFFSET ?''',
+        (user1, user2, user2, user1, limit, offset)
     ).fetchall()
     conn.close()
 
-    # Convert sqlite3.Row objects to plain dicts for JSON serialization
-    return [dict(msg) for msg in messages]
+    # Convert sqlite3.Row objects to plain dicts and reverse to chronological order
+    msg_list = [dict(msg) for msg in messages]
+    msg_list.reverse()
+    return msg_list
 
 
 def mark_messages_read(message_ids, reader):

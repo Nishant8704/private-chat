@@ -233,6 +233,25 @@ def search_messages():
     return jsonify(results)
 
 
+@app.route('/api/messages')
+@login_required
+def get_messages():
+    """Fetch paginated chat history via API.
+    
+    Query params:
+        offset: Number of recent messages to skip
+        limit: Maximum number of messages to return
+    """
+    offset = request.args.get('offset', default=0, type=int)
+    limit = request.args.get('limit', default=50, type=int)
+    
+    current_user = session['username']
+    other_user = get_other_user(current_user)
+    
+    messages = models.get_chat_history(current_user, other_user, limit=limit, offset=offset)
+    return jsonify(messages)
+
+
 # ---------------------------------------------------------------------------
 # Settings Routes
 # ---------------------------------------------------------------------------
@@ -413,7 +432,7 @@ def handle_send_message(data):
     global message_counter
     message_counter += 1
     if message_counter % 3 == 0:
-        recent_msgs = models.get_chat_history(username, receiver)[-3:]
+        recent_msgs = models.get_chat_history(username, receiver, limit=3)
         vibe_emoji = analyze_vibe(recent_msgs)
         if vibe_emoji:
             emit('update_background_emoji', {'emoji': vibe_emoji}, broadcast=True)

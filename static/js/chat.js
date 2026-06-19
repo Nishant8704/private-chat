@@ -211,14 +211,24 @@ const renderMessage = (msg, animate = false) => {
 };
 
 /* ═══════════════════════════════════════════════════════════════════
-   § 7. Chat History Loading
+   § 7. Chat History Loading & Pagination
    ═══════════════════════════════════════════════════════════════════ */
+
+let currentOffset = CHAT_HISTORY.length;
+const BATCH_SIZE = 50;
+let hasMoreMessages = CHAT_HISTORY.length === BATCH_SIZE;
+let isLoadingMessages = false;
+let isSearching = false;
 
 /**
  * Load and render the full chat history from CHAT_HISTORY.
  */
-const loadChatHistory = () => {
+const loadChatHistory = (autoScroll = true) => {
+    // Preserve the background emoji element
+    const bgEmoji = document.getElementById('bg-emoji');
     messagesContainer.innerHTML = '';
+    if (bgEmoji) messagesContainer.appendChild(bgEmoji);
+    
     messageElements.clear();
 
     let currentDateKey = '';
@@ -235,8 +245,50 @@ const loadChatHistory = () => {
         renderMessage(msg);
     });
 
-    scrollToBottom();
+    if (autoScroll) scrollToBottom();
 };
+
+/**
+ * Fetch older messages from the server when scrolling up.
+ */
+const fetchOlderMessages = async () => {
+    if (isLoadingMessages || !hasMoreMessages || isSearching) return;
+    isLoadingMessages = true;
+    
+    try {
+        const res = await fetch(`/api/messages?offset=${currentOffset}&limit=${BATCH_SIZE}`);
+        const olderMessages = await res.json();
+        
+        if (olderMessages.length > 0) {
+            const oldScrollHeight = messagesContainer.scrollHeight;
+            const oldScrollTop = messagesContainer.scrollTop;
+            
+            // Prepend older messages to CHAT_HISTORY
+            CHAT_HISTORY.unshift(...olderMessages);
+            currentOffset += olderMessages.length;
+            
+            // Re-render
+            loadChatHistory(false);
+            
+            // Restore scroll position
+            messagesContainer.scrollTop = (messagesContainer.scrollHeight - oldScrollHeight) + oldScrollTop;
+            
+            if (olderMessages.length < BATCH_SIZE) hasMoreMessages = false;
+        } else {
+            hasMoreMessages = false;
+        }
+    } catch (err) {
+        console.error("Failed to fetch older messages:", err);
+    } finally {
+        isLoadingMessages = false;
+    }
+};
+
+messagesContainer.addEventListener('scroll', () => {
+    if (messagesContainer.scrollTop <= 50) {
+        fetchOlderMessages();
+    }
+});
 
 /* ═══════════════════════════════════════════════════════════════════
    § 8. Scroll Helpers
@@ -380,67 +432,59 @@ const toggleSearch = () => {
 };
 
 /**
- * Search/filter messages by query text.
+ * Search/filter messages by querying the backend.
  * @param {string} query - The search term
  */
-const searchMessages = (query) => {
+const searchMessages = async (query) => {
     const lowerQuery = query.toLowerCase().trim();
+    if (!lowerQuery) {
+        clearSearchHighlights();
+        return;
+    }
 
-    messageElements.forEach((el) => {
-        const textEl = el.querySelector('.message-text');
-        const bubble = el.querySelector('.message-bubble');
-        if (!textEl) {
-            // Deleted messages — hide if query exists
-            if (lowerQuery) {
-                el.classList.add('search-hidden');
-            } else {
-                el.classList.remove('search-hidden');
+    isSearching = true;
+
+    try {
+        const res = await fetch(`/search_messages?q=${encodeURIComponent(lowerQuery)}`);
+        const searchResults = await res.json();
+
+        // Preserve bg emoji
+        const bgEmoji = document.getElementById('bg-emoji');
+        messagesContainer.innerHTML = '';
+        if (bgEmoji) messagesContainer.appendChild(bgEmoji);
+        messageElements.clear();
+
+        let currentDateKey = '';
+
+        searchResults.forEach((msg) => {
+            const dateKey = getDateKey(msg.timestamp);
+            if (dateKey !== currentDateKey) {
+                currentDateKey = dateKey;
+                addDateSeparator(formatDate(msg.timestamp));
             }
-            return;
-        }
 
-        const text = textEl.textContent.toLowerCase();
-
-        if (!lowerQuery) {
-            el.classList.remove('search-hidden');
-            bubble.classList.remove('message-highlight');
-        } else if (text.includes(lowerQuery)) {
-            el.classList.remove('search-hidden');
-            bubble.classList.add('message-highlight');
-        } else {
-            el.classList.add('search-hidden');
-            bubble.classList.remove('message-highlight');
-        }
-    });
-
-    // Also show/hide date separators
-    const separators = messagesContainer.querySelectorAll('.date-separator');
-    separators.forEach((sep) => {
-        if (lowerQuery) {
-            sep.classList.add('search-hidden');
-            sep.style.display = 'none';
-        } else {
-            sep.classList.remove('search-hidden');
-            sep.style.display = '';
-        }
-    });
+            renderMessage(msg);
+            
+            // Highlight
+            const el = messageElements.get(msg.id);
+            if (el) {
+                const bubble = el.querySelector('.message-bubble');
+                if (bubble) bubble.classList.add('message-highlight');
+            }
+        });
+        
+        scrollToBottom();
+    } catch (err) {
+        console.error("Search failed", err);
+    }
 };
 
 /**
- * Remove all search highlights and show all messages.
+ * Remove all search highlights and restore normal view.
  */
 const clearSearchHighlights = () => {
-    messageElements.forEach((el) => {
-        el.classList.remove('search-hidden');
-        const bubble = el.querySelector('.message-bubble');
-        if (bubble) bubble.classList.remove('message-highlight');
-    });
-
-    const separators = messagesContainer.querySelectorAll('.date-separator');
-    separators.forEach((sep) => {
-        sep.classList.remove('search-hidden');
-        sep.style.display = '';
-    });
+    isSearching = false;
+    loadChatHistory();
 };
 
 /* ═══════════════════════════════════════════════════════════════════
@@ -565,9 +609,29 @@ socket.on('receive_message', (msg) => {
 
     // Add to local history
     CHAT_HISTORY.push(msg);
+    currentOffset += 1;
 
-    renderMessage(msg, true);
-    scrollToBottom(true);
+    if (!isSearching) {
+        // Check if we need a date separator
+        const existingMessages = messagesContainer.querySelectorAll('.message-wrapper');
+        if (existingMessages.length > 0) {
+            const lastHistoryMsg = CHAT_HISTORY.length > 1
+                ? CHAT_HISTORY[CHAT_HISTORY.length - 2]
+                : null;
+
+            const lastDateKey = lastHistoryMsg ? getDateKey(lastHistoryMsg.timestamp) : '';
+            const newDateKey = getDateKey(msg.timestamp);
+
+            if (lastDateKey && newDateKey && newDateKey !== lastDateKey) {
+                addDateSeparator(formatDate(msg.timestamp));
+            }
+        } else {
+            addDateSeparator(formatDate(msg.timestamp));
+        }
+
+        renderMessage(msg, true);
+        scrollToBottom(true);
+    }
 
     // Mark as read if the message is from the other user and the page is visible
     if (msg.sender !== CURRENT_USER) {
