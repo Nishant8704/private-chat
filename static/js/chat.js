@@ -7,9 +7,11 @@
  */
 
 /* ═══════════════════════════════════════════════════════════════════
-   § 1. Socket.IO Connection
+   § 1. Socket.IO Connection & Audio
    ═══════════════════════════════════════════════════════════════════ */
 const socket = io();
+const notificationSound = new Audio('/static/sounds/notification.wav');
+notificationSound.volume = 0.3; // Low volume as requested
 
 /* ═══════════════════════════════════════════════════════════════════
    § 2. DOM Element References
@@ -568,12 +570,15 @@ socket.on('receive_message', (msg) => {
     scrollToBottom(true);
 
     // Mark as read if the message is from the other user and the page is visible
-    if (msg.sender !== CURRENT_USER && document.visibilityState === 'visible') {
-        socket.emit('message_read', { message_ids: [msg.id] });
-    }
-
-    // Hide typing indicator (they sent a message, so they stopped typing)
     if (msg.sender !== CURRENT_USER) {
+        if (document.visibilityState === 'visible') {
+            socket.emit('message_read', { message_ids: [msg.id] });
+        } else {
+            // User is not on the screen, play notification sound
+            notificationSound.play().catch(err => console.log("Audio prevented by browser:", err));
+        }
+        
+        // Hide typing indicator (they sent a message, so they stopped typing)
         hideTypingIndicator();
     }
 });
