@@ -147,6 +147,16 @@ const renderMessage = (msg, animate = false) => {
             quotedHtml = `<div class="terminal-quote">> [Replying to ${escapeHtml(senderName)}: ${escapeHtml(msg.replied_to_text)}]</div>`;
         }
 
+        // Check if message is a call invite
+        let messageTextHtml = '';
+        if (msg.message === '[SYSTEM_CALL_INVITE_VIDEO]' || msg.message === '[SYSTEM_CALL_INVITE_AUDIO]') {
+            const callType = msg.message.includes('VIDEO') ? 'video' : 'audio';
+            const icon = callType === 'video' ? '📹' : '📞';
+            messageTextHtml = `<button class="terminal-btn" style="color: var(--success); font-weight: bold; border-color: var(--success); margin-left: 10px;" onclick="joinCallFromInvite('${callType}')">[JOIN ${icon} CALL]</button>`;
+        } else {
+            messageTextHtml = `<span class="terminal-text">${escapeHtml(msg.message)}</span>`;
+        }
+
         // Actions
         const actionsHtml = `
             <span class="terminal-actions">
@@ -160,7 +170,7 @@ const renderMessage = (msg, animate = false) => {
             ${quotedHtml}
             <span class="terminal-time">[${formatTime(msg.timestamp)}]</span> 
             <span class="terminal-sender">${escapeHtml(msg.sender)}></span> 
-            <span class="terminal-text">${escapeHtml(msg.message)}</span>
+            ${messageTextHtml}
             ${actionsHtml}
         `;
     }
