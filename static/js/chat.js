@@ -590,7 +590,7 @@ socket.on('user_status', (data) => {
         if (data.is_online) {
             statusDot?.classList.add('online');
             if (headerStatus) {
-                headerStatus.textContent = 'online';
+                headerStatus.textContent = 'ONLINE';
                 headerStatus.classList.add('online-text');
             }
         } else {
@@ -598,9 +598,9 @@ socket.on('user_status', (data) => {
             headerStatus?.classList.remove('online-text');
             if (headerStatus) {
                 if (data.last_seen) {
-                    headerStatus.textContent = `last seen ${formatTime(data.last_seen)}`;
+                    headerStatus.textContent = `LAST SEEN ${formatTime(data.last_seen)}`;
                 } else {
-                    headerStatus.textContent = 'offline';
+                    headerStatus.textContent = 'OFFLINE';
                 }
             }
         }
@@ -851,6 +851,27 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Focus the message input
     messageInput.focus();
+
+    // Set initial online status
+    if (typeof INITIAL_STATUS !== 'undefined') {
+        if (INITIAL_STATUS.is_online) {
+            statusDot?.classList.add('online');
+            if (headerStatus) {
+                headerStatus.textContent = 'ONLINE';
+                headerStatus.classList.add('online-text');
+            }
+        } else {
+            statusDot?.classList.remove('online');
+            headerStatus?.classList.remove('online-text');
+            if (headerStatus) {
+                if (INITIAL_STATUS.last_seen) {
+                    headerStatus.textContent = `LAST SEEN ${formatTime(INITIAL_STATUS.last_seen)}`;
+                } else {
+                    headerStatus.textContent = 'OFFLINE';
+                }
+            }
+        }
+    }
 });
 
 /* ═══════════════════════════════════════════════════════════════════

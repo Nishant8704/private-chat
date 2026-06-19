@@ -16,8 +16,8 @@
         <header class="terminal-header">
             <div class="terminal-header-info">
                 <span>[Connected: <span id="other-username" class="terminal-username">{{ current_user }}</span>]</span>
-                <span id="header-status" class="terminal-status">ONLINE</span>
-                <span id="status-dot" class="hidden online"></span> <!-- Hidden element for call.js logic -->
+                <span id="header-status" class="terminal-status"></span>
+                <span id="status-dot" class="hidden"></span> <!-- Hidden element for call.js logic -->
             </div>
             <div class="terminal-header-actions">
                 <button id="audio-call-btn" class="terminal-btn">[AUDIO]</button>
@@ -133,6 +133,10 @@
         const CHAT_HISTORY = {{ messages | tojson }};
         const CURRENT_USER_PIC = {{ current_user_pic | tojson }};
         const OTHER_USER_PIC = {{ other_user_pic | tojson }};
+        const INITIAL_STATUS = {
+            is_online: {{ other_user_online | tojson }},
+            last_seen: {{ other_user_last_seen | tojson }}
+        };
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.7.5/socket.io.js"></script>
     <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
