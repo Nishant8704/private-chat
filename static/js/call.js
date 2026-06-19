@@ -89,6 +89,13 @@ async function startCall(type) {
             video: type === 'video' ? { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } : false
         };
 
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+            console.error('navigator.mediaDevices is undefined. This usually means you are accessing the site via HTTP instead of HTTPS/localhost.');
+            showCallError('Browser blocked call access! WebRTC requires HTTPS or localhost.');
+            cleanupCall();
+            return;
+        }
+
         localStream = await navigator.mediaDevices.getUserMedia(constraints);
 
         // Show active call screen with "Calling..." status
@@ -529,6 +536,14 @@ if (acceptCallBtn) {
                 audio: true,
                 video: callType === 'video' ? { facingMode: 'user', width: { ideal: 1280 }, height: { ideal: 720 } } : false
             };
+
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                console.error('navigator.mediaDevices is undefined.');
+                showCallError('Browser blocked call access! WebRTC requires HTTPS or localhost.');
+                socket.emit('call_reject', { to: OTHER_USER, reason: 'media_error' });
+                cleanupCall();
+                return;
+            }
 
             localStream = await navigator.mediaDevices.getUserMedia(constraints);
 
