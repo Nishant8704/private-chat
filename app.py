@@ -450,6 +450,75 @@ def handle_delete_message(data):
 
 
 # ---------------------------------------------------------------------------
+# WebRTC Call Signaling Events
+# ---------------------------------------------------------------------------
+@socketio.on('call_request')
+def handle_call_request(data):
+    """Relay a call request to the target user."""
+    callee = data.get('callee')
+    if callee in online_users:
+        emit('incoming_call', {
+            'caller': data.get('caller'),
+            'call_type': data.get('call_type', 'audio')
+        }, to=online_users[callee])
+
+
+@socketio.on('call_accept')
+def handle_call_accept(data):
+    """Notify the caller that the callee accepted."""
+    target = data.get('to')
+    if target in online_users:
+        emit('call_accepted', {}, to=online_users[target])
+
+
+@socketio.on('call_reject')
+def handle_call_reject(data):
+    """Notify the caller that the callee rejected."""
+    target = data.get('to')
+    reason = data.get('reason', 'declined')
+    if target in online_users:
+        emit('call_rejected', {'reason': reason}, to=online_users[target])
+
+
+@socketio.on('call_end')
+def handle_call_end(data):
+    """Notify the other user that the call has ended."""
+    target = data.get('to')
+    if target in online_users:
+        emit('call_ended', {}, to=online_users[target])
+
+
+@socketio.on('webrtc_offer')
+def handle_webrtc_offer(data):
+    """Relay the WebRTC SDP offer to the target user."""
+    target = data.get('to')
+    if target in online_users:
+        emit('webrtc_offer', {
+            'offer': data.get('offer')
+        }, to=online_users[target])
+
+
+@socketio.on('webrtc_answer')
+def handle_webrtc_answer(data):
+    """Relay the WebRTC SDP answer back to the caller."""
+    target = data.get('to')
+    if target in online_users:
+        emit('webrtc_answer', {
+            'answer': data.get('answer')
+        }, to=online_users[target])
+
+
+@socketio.on('ice_candidate')
+def handle_ice_candidate(data):
+    """Relay ICE candidates between the two peers."""
+    target = data.get('to')
+    if target in online_users:
+        emit('ice_candidate', {
+            'candidate': data.get('candidate')
+        }, to=online_users[target])
+
+
+# ---------------------------------------------------------------------------
 # Application Startup
 # ---------------------------------------------------------------------------
 
