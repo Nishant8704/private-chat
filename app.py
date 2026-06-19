@@ -384,21 +384,25 @@ def handle_disconnect():
     if not username:
         return
 
-    # Remove from online tracking
-    online_users.pop(username, None)
+    # Only remove if the disconnecting socket is the currently active one.
+    # This prevents a race condition during page refresh where the new connection
+    # is established before the old connection is fully disconnected.
+    if online_users.get(username) == request.sid:
+        # Remove from online tracking
+        online_users.pop(username, None)
 
-    # Update database status
-    models.set_user_online(username, False)
+        # Update database status
+        models.set_user_online(username, False)
 
-    # Get the updated last seen time
-    last_seen = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
+        # Get the updated last seen time
+        last_seen = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
 
-    # Broadcast offline status to all connected clients
-    emit('user_status', {
-        'username': username,
-        'is_online': False,
-        'last_seen': last_seen
-    }, broadcast=True)
+        # Broadcast offline status to all connected clients
+        emit('user_status', {
+            'username': username,
+            'is_online': False,
+            'last_seen': last_seen
+        }, broadcast=True)
 
 
 @socketio.on('send_message')
