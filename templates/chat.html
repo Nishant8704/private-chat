@@ -11,312 +11,82 @@
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
 </head>
 <body>
-    <div class="chat-container">
+    <div class="terminal-chat-container">
+        <!-- ===== Header ===== -->
+        <header class="terminal-header">
+            <div class="terminal-header-info">
+                <span>[Connected: <span id="other-username" class="terminal-username">{{ current_user }}</span>]</span>
+                <span id="header-status" class="terminal-status">ONLINE</span>
+                <span id="status-dot" class="hidden online"></span> <!-- Hidden element for call.js logic -->
+            </div>
+            <div class="terminal-header-actions">
+                <button id="audio-call-btn" class="terminal-btn">[AUDIO CALL]</button>
+                <button id="video-call-btn" class="terminal-btn">[VIDEO CALL]</button>
+                <a href="{{ url_for('logout') }}" class="terminal-btn">[LOGOUT]</a>
+            </div>
+        </header>
 
-        <!-- ===== Chat Header ===== -->
-        <div class="chat-header">
-            <div class="header-left">
-                <button class="header-avatar-wrapper" id="header-avatar-btn" title="Change your profile picture">
-                    <img
-                        src="{{ url_for('static', filename='uploads/profile_pics/' + other_user_pic) }}"
-                        alt="{{ other_user }}"
-                        class="header-avatar"
-                        id="header-avatar-img"
-                        onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 40 40%22><rect fill=%22%232a3942%22 width=%2240%22 height=%2240%22/><text x=%2250%%22 y=%2255%%22 text-anchor=%22middle%22 fill=%22%238696a0%22 font-size=%2218%22>{{ other_user[0] }}</text></svg>'"
-                    >
-                    <span class="status-dot {{ 'online' if other_user_online else '' }}" id="status-dot"></span>
-                </button>
-                <div class="header-info">
-                    <span class="header-name">{{ other_user }}</span>
-                    <span class="header-status" id="header-status">
-                        {% if other_user_online %}
-                            online
-                        {% elif other_user_last_seen %}
-                            last seen {{ other_user_last_seen }}
-                        {% else %}
-                            offline
-                        {% endif %}
-                    </span>
-                </div>
-            </div>
-            <div class="header-actions">
-                <button class="header-btn" id="audio-call-btn" title="Audio call">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                    </svg>
-                </button>
-                <button class="header-btn" id="video-call-btn" title="Video call">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M23 7l-7 5 7 5V7z"></path>
-                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-                    </svg>
-                </button>
-                <button class="header-btn" id="search-btn" title="Search messages">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="11" cy="11" r="8"></circle>
-                        <path d="m21 21-4.35-4.35"></path>
-                    </svg>
-                </button>
-                <button class="header-btn" id="settings-btn" title="Settings">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <circle cx="12" cy="12" r="3"></circle>
-                        <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"></path>
-                    </svg>
-                </button>
-                <a href="/logout" class="header-btn" title="Logout">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"></path>
-                        <polyline points="16 17 21 12 16 7"></polyline>
-                        <line x1="21" y1="12" x2="9" y2="12"></line>
-                    </svg>
-                </a>
-            </div>
+        <!-- ===== Search Area ===== -->
+        <div class="terminal-search">
+            <label for="search-input">search></label>
+            <input type="text" id="search-input" class="terminal-input" placeholder="Query DB..." autocomplete="off">
+            <button id="search-close-btn" class="terminal-btn hidden">[X]</button>
         </div>
 
-        <!-- ===== Search Panel ===== -->
-        <div class="search-panel" id="search-panel">
-            <div class="search-input-wrapper">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="11" cy="11" r="8"></circle>
-                    <path d="m21 21-4.35-4.35"></path>
-                </svg>
-                <input type="text" class="search-input" id="search-input" placeholder="Search messages...">
-                <button class="search-close-btn" id="search-close-btn">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
-            </div>
-        </div>
-
-        <!-- ===== Background Emoji ===== -->
-        <div id="bg-emoji" class="bg-emoji"></div>
-
-        <!-- ===== Messages Area ===== -->
-        <div class="messages-container" id="messages-container">
-            <!-- Messages rendered by JavaScript -->
-        </div>
+        <!-- ===== Chat History ===== -->
+        <main class="terminal-messages" id="messages-container">
+            <!-- Messages render here in terminal format -->
+        </main>
 
         <!-- ===== Typing Indicator ===== -->
-        <div class="typing-indicator" id="typing-indicator">
-            <span class="typing-text">{{ other_user }} is typing</span>
-            <div class="typing-dots">
-                <span class="typing-dot"></span>
-                <span class="typing-dot"></span>
-                <span class="typing-dot"></span>
-            </div>
+        <div class="terminal-typing-indicator hidden" id="typing-indicator">
+            > User is typing...
         </div>
 
         <!-- ===== Reply Context ===== -->
-        <div id="reply-context" class="reply-context hidden">
-            <div class="reply-context-info">
-                <div class="reply-context-title">Replying to <span id="reply-context-sender"></span></div>
-                <div id="reply-context-text" class="reply-context-text"></div>
-            </div>
-            <button id="cancel-reply-btn" class="cancel-reply-btn" title="Cancel Reply">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-            </button>
-        </div>
-
-        <!-- ===== Emoji Picker ===== -->
-        <div class="emoji-picker" id="emoji-picker">
-            <div class="emoji-picker-header">
-                <span>Emojis</span>
-                <button class="emoji-picker-close" id="emoji-picker-close">
-                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <line x1="18" y1="6" x2="6" y2="18"></line>
-                        <line x1="6" y1="6" x2="18" y2="18"></line>
-                    </svg>
-                </button>
-            </div>
-            <div class="emoji-grid" id="emoji-grid">
-                <!-- Emojis populated by JavaScript -->
-            </div>
+        <div id="reply-context" class="terminal-reply-context hidden">
+            <span>[Replying to <span id="reply-context-sender"></span>: <span id="reply-context-text"></span>]</span>
+            <button id="cancel-reply-btn" class="terminal-btn">[CANCEL]</button>
         </div>
 
         <!-- ===== Input Area ===== -->
-        <div class="input-area">
-            <button class="emoji-btn" id="emoji-btn" title="Emojis">
-                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <circle cx="12" cy="12" r="10"></circle>
-                    <path d="M8 14s1.5 2 4 2 4-2 4-2"></path>
-                    <line x1="9" y1="9" x2="9.01" y2="9"></line>
-                    <line x1="15" y1="9" x2="15.01" y2="9"></line>
-                </svg>
-            </button>
-            <input
-                type="text"
-                class="message-input"
-                id="message-input"
-                placeholder="Type a message..."
-                autocomplete="off"
-                maxlength="5000"
-            >
-            <button class="send-btn" id="send-btn" title="Send message">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="22" y1="2" x2="11" y2="13"></line>
-                    <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
-                </svg>
-            </button>
+        <footer class="terminal-input-area">
+            <label for="message-input" class="prompt">C:\Chat></label>
+            <input type="text" id="message-input" class="terminal-input" placeholder="Enter command/message..." autocomplete="off" autofocus>
+            <button id="send-btn" class="terminal-btn">[SEND]</button>
+        </footer>
+
+        <!-- ===== Incoming Call Overlay ===== -->
+        <div class="terminal-modal" id="incoming-call-overlay">
+            <div class="terminal-modal-content">
+                <p>> INCOMING <span id="incoming-call-type"></span> CALL FROM <span id="incoming-caller-name"></span>...</p>
+                <div class="terminal-modal-actions">
+                    <button id="accept-call-btn" class="terminal-btn">[ACCEPT]</button>
+                    <button id="reject-call-btn" class="terminal-btn">[REJECT]</button>
+                </div>
+            </div>
         </div>
-    </div>
 
-    <!-- ===== Profile Picture Upload Modal ===== -->
-    <div class="modal-overlay" id="profile-modal">
-        <div class="modal-content">
-            <button class="modal-close" id="modal-close-btn">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-            </button>
-            <h3 class="modal-title">Update Profile Picture</h3>
-            <form id="upload-form">
-                <div class="upload-preview-wrapper">
-                    <img
-                        src="{{ url_for('static', filename='uploads/profile_pics/' + current_user_pic) }}"
-                        alt="Preview"
-                        class="upload-preview"
-                        id="modal-preview-img"
-                        onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><rect fill=%22%232a3942%22 width=%22100%22 height=%22100%22/><text x=%2250%%22 y=%2255%%22 text-anchor=%22middle%22 fill=%22%238696a0%22 font-size=%2240%22>{{ current_user[0] }}</text></svg>'"
-                    >
+        <!-- ===== Active Call Screen ===== -->
+        <div class="terminal-modal" id="active-call-screen">
+            <div class="terminal-modal-content">
+                <p>> ACTIVE CALL WITH <span id="call-user-name"></span></p>
+                <p>> STATUS: <span id="call-status">Connecting...</span></p>
+                <p>> TIME: <span id="call-timer">00:00</span></p>
+                <div class="video-container">
+                    <video id="remote-video" autoplay playsinline></video>
+                    <video id="local-video" autoplay playsinline muted></video>
                 </div>
-                <label class="upload-label" for="file-input">
-                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                        <polyline points="17 8 12 3 7 8"></polyline>
-                        <line x1="12" y1="3" x2="12" y2="15"></line>
-                    </svg>
-                    Choose Image
-                </label>
-                <input type="file" id="file-input" accept="image/*" style="display: none;">
-                <p class="upload-file-name" id="file-name">No file selected</p>
-                <p class="upload-hint">PNG, JPG, GIF, WebP • Max 2MB</p>
-                <button type="submit" class="upload-btn" id="upload-btn" disabled>Upload</button>
-            </form>
-        </div>
-    </div>
-
-    <!-- ===== Settings Modal ===== -->
-    <div class="modal-overlay" id="settings-modal">
-        <div class="modal-content">
-            <button class="modal-close" id="settings-close-btn">
-                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                    <line x1="18" y1="6" x2="6" y2="18"></line>
-                    <line x1="6" y1="6" x2="18" y2="18"></line>
-                </svg>
-            </button>
-            <h3 class="modal-title">Account Settings</h3>
-
-            <!-- Status messages -->
-            <div class="settings-success" id="settings-success"></div>
-            <div class="settings-error" id="settings-error"></div>
-
-            <div class="settings-form">
-                <!-- Change Username Section -->
-                <p class="settings-section-title">Change Username</p>
-                <div class="settings-group">
-                    <label class="settings-label" for="new-username">New Username</label>
-                    <input type="text" class="settings-input" id="new-username" placeholder="Enter new username" maxlength="20" autocomplete="off">
+                <div class="terminal-modal-actions">
+                    <button id="mute-btn" class="terminal-btn">[MUTE]</button>
+                    <button id="camera-btn" class="terminal-btn">[CAMERA]</button>
+                    <button id="end-call-btn" class="terminal-btn">[END CALL]</button>
                 </div>
-                <div class="settings-group">
-                    <label class="settings-label" for="username-password">Current Password</label>
-                    <input type="password" class="settings-input" id="username-password" placeholder="Verify your password" autocomplete="off">
-                </div>
-                <button class="settings-btn" id="change-username-btn">Update Username</button>
-
-                <div class="settings-divider"></div>
-
-                <!-- Change Password Section -->
-                <p class="settings-section-title">Change Password</p>
-                <div class="settings-group">
-                    <label class="settings-label" for="current-password">Current Password</label>
-                    <input type="password" class="settings-input" id="current-password" placeholder="Enter current password" autocomplete="off">
-                </div>
-                <div class="settings-group">
-                    <label class="settings-label" for="new-password">New Password</label>
-                    <input type="password" class="settings-input" id="new-password" placeholder="Enter new password (min 4 chars)" autocomplete="off">
-                </div>
-                <button class="settings-btn" id="change-password-btn">Update Password</button>
-
-                <p class="settings-note">Changes take effect immediately. You may need to re-login after changing your username.</p>
             </div>
         </div>
     </div>
 
-    <!-- ===== Incoming Call Overlay ===== -->
-    <div class="call-overlay incoming-call-overlay" id="incoming-call-overlay">
-        <div class="incoming-call-card">
-            <div class="incoming-call-avatar">
-                <div class="incoming-call-pulse"></div>
-                <div class="incoming-call-icon">
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                    </svg>
-                </div>
-            </div>
-            <h3 class="incoming-caller-name" id="incoming-caller-name">User</h3>
-            <p class="incoming-call-type" id="incoming-call-type">Audio Call</p>
-            <div class="incoming-call-actions">
-                <button class="call-action-btn reject-btn" id="reject-call-btn" title="Decline">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.11 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path>
-                        <line x1="23" y1="1" x2="1" y2="23"></line>
-                    </svg>
-                </button>
-                <button class="call-action-btn accept-btn" id="accept-call-btn" title="Accept">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M22 16.92v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6 19.79 19.79 0 0 1-3.07-8.67A2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91a16 16 0 0 0 6 6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7A2 2 0 0 1 22 16.92z"></path>
-                    </svg>
-                </button>
-            </div>
-        </div>
-    </div>
 
-    <!-- ===== Active Call Screen ===== -->
-    <div class="call-overlay active-call-screen" id="active-call-screen">
-        <video class="remote-video" id="remote-video" autoplay playsinline></video>
-        <video class="local-video" id="local-video" autoplay playsinline muted></video>
-
-        <div class="call-info">
-            <h3 class="call-user-name" id="call-user-name">User</h3>
-            <p class="call-status" id="call-status">Calling...</p>
-            <p class="call-timer" id="call-timer">00:00</p>
-        </div>
-
-        <div class="call-controls">
-            <button class="call-control-btn" id="mute-btn" title="Mute">
-                <span class="btn-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3z"></path>
-                        <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
-                        <line x1="12" y1="19" x2="12" y2="23"></line>
-                        <line x1="8" y1="23" x2="16" y2="23"></line>
-                    </svg>
-                </span>
-            </button>
-            <button class="call-control-btn end-call-btn" id="end-call-btn" title="End call">
-                <span class="btn-icon">
-                    <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M10.68 13.31a16 16 0 0 0 3.41 2.6l1.27-1.27a2 2 0 0 1 2.11-.45 12.84 12.84 0 0 0 2.81.7 2 2 0 0 1 1.72 2v3a2 2 0 0 1-2.18 2 19.79 19.79 0 0 1-8.63-3.07 19.5 19.5 0 0 1-6-6A19.79 19.79 0 0 1 2.12 4.11 2 2 0 0 1 4.11 2h3a2 2 0 0 1 2 1.72 12.84 12.84 0 0 0 .7 2.81 2 2 0 0 1-.45 2.11L8.09 9.91"></path>
-                        <line x1="23" y1="1" x2="1" y2="23"></line>
-                    </svg>
-                </span>
-            </button>
-            <button class="call-control-btn" id="camera-btn" title="Camera">
-                <span class="btn-icon">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-                        <path d="M23 7l-7 5 7 5V7z"></path>
-                        <rect x="1" y="5" width="15" height="14" rx="2" ry="2"></rect>
-                    </svg>
-                </span>
-            </button>
-        </div>
-    </div>
 
     <!-- ===== Pass data to JavaScript ===== -->
     <script>

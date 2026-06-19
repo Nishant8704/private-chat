@@ -144,82 +144,42 @@ const addDateSeparator = (dateText) => {
    ═══════════════════════════════════════════════════════════════════ */
 
 /**
- * Render a single message and append it to the messages container.
- * @param {Object} msg - Message object with id, sender, message, timestamp, is_read, is_deleted
- * @param {boolean} animate - Whether to apply entrance animation
- * @returns {HTMLElement} The created message wrapper element
+ * Render a single terminal message line.
  */
 const renderMessage = (msg, animate = false) => {
     const isSent = msg.sender === CURRENT_USER;
     const wrapper = document.createElement('div');
-    wrapper.className = `message-wrapper ${isSent ? 'sent' : 'received'}`;
+    wrapper.className = 'terminal-message-line';
     wrapper.dataset.messageId = msg.id;
-    if (animate) wrapper.classList.add('animate');
-
-    // Create Actions Container
-    const actions = document.createElement('div');
-    actions.className = 'message-actions';
-    
-    // Reply Button
-    const replyBtn = document.createElement('button');
-    replyBtn.className = 'action-btn reply-btn';
-    replyBtn.title = 'Reply';
-    replyBtn.innerHTML = '↩️';
-    replyBtn.onclick = (e) => { e.stopPropagation(); initReply(msg.id, msg.message, msg.sender); };
-    actions.appendChild(replyBtn);
-
-    if (isSent) {
-        // Delete Button
-        const delBtn = document.createElement('button');
-        delBtn.className = 'action-btn delete-btn';
-        delBtn.title = 'Delete';
-        delBtn.innerHTML = '🗑️';
-        delBtn.onclick = (e) => { e.stopPropagation(); deleteMessage(msg.id); };
-        actions.appendChild(delBtn);
-    }
-
-    const bubble = document.createElement('div');
-    bubble.className = `message-bubble ${isSent ? 'sent' : 'received'}`;
 
     if (msg.is_deleted) {
-        // Deleted message placeholder
-        bubble.innerHTML = `<span class="message-deleted">🚫 This message was deleted</span>`;
+        wrapper.innerHTML = `<span class="terminal-time">[${formatTime(msg.timestamp)}]</span> <span class="terminal-sender">${msg.sender}></span> <span class="terminal-deleted">[MESSAGE DELETED]</span>`;
     } else {
-        // Build status ticks for sent messages
-        let statusHtml = '';
-        if (isSent) {
-            if (msg.is_read) {
-                statusHtml = `<span class="message-status read-ticks" title="Read">✓✓</span>`;
-            } else {
-                statusHtml = `<span class="message-status" title="Sent">✓</span>`;
-            }
-        }
-        
         // Build Quoted block if reply
         let quotedHtml = '';
         if (msg.replied_to_id && msg.replied_to_text) {
             const senderName = msg.replied_to_sender === CURRENT_USER ? 'You' : msg.replied_to_sender;
-            // Removed onclick for scrollToMessage to keep it simple, or can implement later
-            quotedHtml = `
-                <div class="quoted-message">
-                    <div class="quoted-sender">${escapeHtml(senderName)}</div>
-                    <div class="quoted-text">${escapeHtml(msg.replied_to_text)}</div>
-                </div>
-            `;
+            quotedHtml = `<div class="terminal-quote">> [Replying to ${escapeHtml(senderName)}: ${escapeHtml(msg.replied_to_text)}]</div>`;
         }
 
-        bubble.innerHTML = `
-            ${quotedHtml}
-            <span class="message-text">${escapeHtml(msg.message)}</span>
-            <span class="message-meta">
-                <span class="message-time">${formatTime(msg.timestamp)}</span>
-                ${statusHtml}
+        // Actions
+        const actionsHtml = `
+            <span class="terminal-actions">
+                <button class="terminal-action-btn reply-btn" title="Reply" onclick="event.stopPropagation(); initReply(${msg.id}, '${escapeHtml(msg.message.replace(/'/g, "\\'"))}', '${msg.sender}')">[REP]</button>
+                ${isSent ? `<button class="terminal-action-btn delete-btn" title="Delete" onclick="event.stopPropagation(); deleteMessage(${msg.id})">[DEL]</button>` : ''}
+                ${isSent ? (msg.is_read ? '<span class="terminal-status">[READ]</span>' : '<span class="terminal-status">[SENT]</span>') : ''}
             </span>
+        `;
+
+        wrapper.innerHTML = `
+            ${quotedHtml}
+            <span class="terminal-time">[${formatTime(msg.timestamp)}]</span> 
+            <span class="terminal-sender">${escapeHtml(msg.sender)}></span> 
+            <span class="terminal-text">${escapeHtml(msg.message)}</span>
+            ${actionsHtml}
         `;
     }
 
-    wrapper.appendChild(bubble);
-    wrapper.appendChild(actions);
     messagesContainer.appendChild(wrapper);
 
     // Store reference for quick updates
@@ -361,48 +321,6 @@ const sendMessage = () => {
     messageInput.focus();
 };
 
-/**
- * Fetch older messages from the server when scrolling up.
- */
-const fetchOlderMessages = async () => {
-    if (isLoadingMessages || !hasMoreMessages || isSearching) return;
-    isLoadingMessages = true;
-    
-    try {
-        const res = await fetch(`/api/messages?offset=${currentOffset}&limit=${BATCH_SIZE}`);
-        const olderMessages = await res.json();
-        
-        if (olderMessages.length > 0) {
-            const oldScrollHeight = messagesContainer.scrollHeight;
-            const oldScrollTop = messagesContainer.scrollTop;
-            
-            // Prepend older messages to CHAT_HISTORY
-            CHAT_HISTORY.unshift(...olderMessages);
-            currentOffset += olderMessages.length;
-            
-            // Re-render
-            loadChatHistory(false);
-            
-            // Restore scroll position
-            messagesContainer.scrollTop = (messagesContainer.scrollHeight - oldScrollHeight) + oldScrollTop;
-            
-            if (olderMessages.length < BATCH_SIZE) hasMoreMessages = false;
-        } else {
-            hasMoreMessages = false;
-        }
-    } catch (err) {
-        console.error("Failed to fetch older messages:", err);
-    } finally {
-        isLoadingMessages = false;
-    }
-};
-
-messagesContainer.addEventListener('scroll', () => {
-    if (messagesContainer.scrollTop <= 50) {
-        fetchOlderMessages();
-    }
-});
-
 /* ═══════════════════════════════════════════════════════════════════
    § 8. Scroll Helpers
    ═══════════════════════════════════════════════════════════════════ */
@@ -419,32 +337,6 @@ const scrollToBottom = (smooth = false) => {
         });
     } else {
         messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
-};
-
-/* ═══════════════════════════════════════════════════════════════════
-   § 9. Sending Messages
-   ═══════════════════════════════════════════════════════════════════ */
-
-/**
- * Send the current input message via Socket.IO.
- */
-const sendMessage = () => {
-    const text = messageInput.value.trim();
-    if (!text) return;
-
-    socket.emit('send_message', { message: text });
-    messageInput.value = '';
-    messageInput.focus();
-
-    // Stop typing indicator
-    if (isTyping) {
-        isTyping = false;
-        socket.emit('stop_typing');
-    }
-    if (typingTimeout) {
-        clearTimeout(typingTimeout);
-        typingTimeout = null;
     }
 };
 
@@ -752,7 +644,7 @@ socket.on('receive_message', (msg) => {
             socket.emit('message_read', { message_ids: [msg.id] });
         } else {
             // User is not on the screen, play notification sound
-            notificationSound.play().catch(err => console.log("Audio prevented by browser:", err));
+            notificationSound?.play().catch(err => console.log("Audio prevented by browser:", err));
         }
         
         // Hide typing indicator (they sent a message, so they stopped typing)
@@ -766,16 +658,20 @@ socket.on('receive_message', (msg) => {
 socket.on('user_status', (data) => {
     if (data.username === OTHER_USER) {
         if (data.is_online) {
-            statusDot.classList.add('online');
-            headerStatus.textContent = 'online';
-            headerStatus.classList.add('online-text');
+            statusDot?.classList.add('online');
+            if (headerStatus) {
+                headerStatus.textContent = 'online';
+                headerStatus.classList.add('online-text');
+            }
         } else {
-            statusDot.classList.remove('online');
-            headerStatus.classList.remove('online-text');
-            if (data.last_seen) {
-                headerStatus.textContent = `last seen ${formatTime(data.last_seen)}`;
-            } else {
-                headerStatus.textContent = 'offline';
+            statusDot?.classList.remove('online');
+            headerStatus?.classList.remove('online-text');
+            if (headerStatus) {
+                if (data.last_seen) {
+                    headerStatus.textContent = `last seen ${formatTime(data.last_seen)}`;
+                } else {
+                    headerStatus.textContent = 'offline';
+                }
             }
         }
     }
@@ -805,38 +701,36 @@ socket.on('stop_typing', (data) => {
 socket.on('messages_read', (data) => {
     if (!data.message_ids) return;
 
-    data.message_ids.forEach((id) => {
-        const el = messageElements.get(id);
-        if (!el) return;
-
-        const statusEl = el.querySelector('.message-status');
-        if (statusEl) {
-            statusEl.classList.add('read-ticks');
-            statusEl.textContent = '✓✓';
-            statusEl.title = 'Read';
-        }
-    });
+    data.message_ids.forEach((id) => markMessageAsRead(id));
 });
+
+/**
+ * Update message status to read.
+ */
+const markMessageAsRead = (messageId) => {
+    const el = messageElements.get(messageId);
+    if (!el) return;
+
+    const statusEl = el.querySelector('.terminal-status');
+    if (statusEl) {
+        statusEl.textContent = '[READ]';
+    }
+};
 
 /**
  * Handle message deletion events.
  */
 socket.on('message_deleted', (data) => {
     const el = messageElements.get(data.message_id);
-    if (!el) return;
-
-    const bubble = el.querySelector('.message-bubble');
-    if (bubble) {
-        bubble.innerHTML = `<span class="message-deleted">🚫 This message was deleted</span>`;
+    const msg = CHAT_HISTORY.find((m) => m.id === data.message_id);
+    if (msg) {
+        msg.is_deleted = true;
     }
 
-    // Remove actions container if present
-    const actions = el.querySelector('.message-actions');
-    if (actions) actions.remove();
+    if (!el) return;
 
-    // Update local history
-    const msg = CHAT_HISTORY.find((m) => m.id === data.message_id);
-    if (msg) msg.is_deleted = 1;
+    // Replace innerHTML with deleted format
+    el.innerHTML = `<span class="terminal-time">[${formatTime(msg.timestamp)}]</span> <span class="terminal-sender">${msg.sender}></span> <span class="terminal-deleted">[MESSAGE DELETED]</span>`;
 });
 
 /**
@@ -865,53 +759,64 @@ socket.on('update_background_emoji', (data) => {
    ═══════════════════════════════════════════════════════════════════ */
 
 // --- Send Message ---
-sendBtn.addEventListener('click', sendMessage);
+if (sendBtn) sendBtn.addEventListener('click', sendMessage);
 
-messageInput.addEventListener('keydown', (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-        e.preventDefault();
-        sendMessage();
-    }
-});
+if (messageInput) {
+    messageInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
 
-// --- Typing detection ---
-messageInput.addEventListener('input', handleTypingInput);
+    // --- Typing detection ---
+    messageInput.addEventListener('input', handleTypingInput);
+}
 
 // --- Emoji Picker ---
-emojiBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    toggleEmojiPicker();
-});
+if (emojiBtn) {
+    emojiBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        toggleEmojiPicker();
+    });
+}
 
-emojiPickerClose.addEventListener('click', () => {
-    emojiPicker.classList.remove('active');
-    emojiBtn.classList.remove('active');
-});
+if (emojiPickerClose) {
+    emojiPickerClose.addEventListener('click', () => {
+        emojiPicker.classList.remove('active');
+        emojiBtn.classList.remove('active');
+    });
+}
 
 // Close emoji picker when clicking outside
 document.addEventListener('click', (e) => {
     if (
+        emojiPicker &&
         emojiPicker.classList.contains('active') &&
         !emojiPicker.contains(e.target) &&
-        !emojiBtn.contains(e.target)
+        (!emojiBtn || !emojiBtn.contains(e.target))
     ) {
         emojiPicker.classList.remove('active');
-        emojiBtn.classList.remove('active');
+        if (emojiBtn) emojiBtn.classList.remove('active');
     }
 });
 
 // --- Search ---
-searchBtn.addEventListener('click', toggleSearch);
+if (searchBtn) searchBtn.addEventListener('click', toggleSearch);
 
-searchCloseBtn.addEventListener('click', () => {
-    searchPanel.classList.remove('active');
-    searchInput.value = '';
-    clearSearchHighlights();
-});
+if (searchCloseBtn) {
+    searchCloseBtn.addEventListener('click', () => {
+        if (searchPanel) searchPanel.classList.remove('active');
+        if (searchInput) searchInput.value = '';
+        clearSearchHighlights();
+    });
+}
 
-searchInput.addEventListener('input', (e) => {
-    searchMessages(e.target.value);
-});
+if (searchInput) {
+    searchInput.addEventListener('input', (e) => {
+        searchMessages(e.target.value);
+    });
+}
 
 // --- Profile Picture Modal ---
 headerAvatarBtn.addEventListener('click', openProfileModal);
