@@ -50,7 +50,7 @@ function initJitsiMeet(type) {
         jitsiApi.dispose();
     }
 
-    const domain = 'meet.jit.si';
+    const domain = 'meet.ffmuc.net';
     const options = {
         roomName: getRoomName(),
         width: '100%',
