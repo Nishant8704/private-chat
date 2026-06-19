@@ -31,6 +31,7 @@ let callTimerInterval = null;
 let callStartTime = null;
 let isMuted = false;
 let isCameraOff = false;
+let remoteCandidatesQueue = [];
 
 /* ═══════════════════════════════════════════════════════════════════
    § 2. DOM References
@@ -160,12 +161,15 @@ function createPeerConnection() {
 
     // Handle incoming remote tracks
     peerConnection.ontrack = (event) => {
-        remoteStream = event.streams[0];
-        remoteVideo.srcObject = remoteStream;
+        if (!remoteStream) {
+            remoteStream = new MediaStream();
+            remoteVideo.srcObject = remoteStream;
+        }
+        remoteStream.addTrack(event.track);
 
         // Update status when media starts flowing
         callStatus.textContent = '';
-        startCallTimer();
+        if (!callTimerInterval) startCallTimer();
     };
 
     // Handle ICE candidates
@@ -181,7 +185,7 @@ function createPeerConnection() {
     // Handle connection state changes
     peerConnection.onconnectionstatechange = () => {
         const state = peerConnection.connectionState;
-        if (state === 'disconnected' || state === 'failed' || state === 'closed') {
+        if (state === 'failed' || state === 'closed') {
             endCall(false); // Don't emit, connection already dead
         }
     };
@@ -224,6 +228,8 @@ async function handleOffer(offer) {
 
     try {
         await peerConnection.setRemoteDescription(new RTCSessionDescription(offer));
+        await processQueuedCandidates();
+
         const answer = await peerConnection.createAnswer();
         await peerConnection.setLocalDescription(answer);
 
@@ -244,6 +250,7 @@ async function handleAnswer(answer) {
     try {
         if (peerConnection) {
             await peerConnection.setRemoteDescription(new RTCSessionDescription(answer));
+            await processQueuedCandidates();
         }
     } catch (err) {
         console.error('Failed to handle answer:', err);
@@ -255,11 +262,29 @@ async function handleAnswer(answer) {
  */
 async function handleIceCandidate(candidate) {
     try {
-        if (peerConnection) {
-            await peerConnection.addIceCandidate(new RTCIceCandidate(candidate));
+        if (peerConnection && peerConnection.remoteDescription && peerConnection.remoteDescription.type) {
+            await peerConnection.addIceCandidate(candidate);
+        } else {
+            remoteCandidatesQueue.push(candidate);
         }
     } catch (err) {
         console.error('Failed to add ICE candidate:', err);
+    }
+}
+
+/**
+ * Apply all buffered remote ICE candidates to the peer connection.
+ */
+async function processQueuedCandidates() {
+    if (!peerConnection) return;
+    console.log(`Processing ${remoteCandidatesQueue.length} queued ICE candidates`);
+    while (remoteCandidatesQueue.length > 0) {
+        const candidate = remoteCandidatesQueue.shift();
+        try {
+            await peerConnection.addIceCandidate(candidate);
+        } catch (err) {
+            console.error('Failed to add queued ICE candidate:', err);
+        }
     }
 }
 
@@ -353,6 +378,7 @@ function cleanupCall() {
     callType = null;
     isMuted = false;
     isCameraOff = false;
+    remoteCandidatesQueue = [];
 
     // Hide overlays
     hideIncomingCallOverlay();
