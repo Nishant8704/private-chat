@@ -569,6 +569,15 @@ if (acceptCallBtn) {
     });
 }
 
+// Header call buttons
+if (audioCallBtn) {
+    audioCallBtn.addEventListener('click', () => startCall('audio'));
+}
+
+if (videoCallBtn) {
+    videoCallBtn.addEventListener('click', () => startCall('video'));
+}
+
 // Reject incoming call
 if (rejectCallBtn) {
     rejectCallBtn.addEventListener('click', () => {
