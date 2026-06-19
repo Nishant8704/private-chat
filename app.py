@@ -578,14 +578,6 @@ def handle_webrtc_answer(data):
         }, to=online_users[target])
 
 
-@socketio.on('ice_candidate')
-def handle_ice_candidate(data):
-    """Relay ICE candidates between the two peers."""
-    target = data.get('to')
-    if target in online_users:
-        emit('ice_candidate', {
-            'candidate': data.get('candidate')
-        }, to=online_users[target])
 
 
 # ---------------------------------------------------------------------------
