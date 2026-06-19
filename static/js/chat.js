@@ -125,21 +125,6 @@ const getDateKey = (timestamp) => {
 };
 
 /* ═══════════════════════════════════════════════════════════════════
-   § 5. Date Separator
-   ═══════════════════════════════════════════════════════════════════ */
-
-/**
- * Add a date separator pill to the messages container.
- * @param {string} dateText - Human-readable date string
- */
-const addDateSeparator = (dateText) => {
-    const separator = document.createElement('div');
-    separator.className = 'date-separator';
-    separator.innerHTML = `<span class="date-separator-pill">${escapeHtml(dateText)}</span>`;
-    messagesContainer.appendChild(separator);
-};
-
-/* ═══════════════════════════════════════════════════════════════════
    § 6. Message Rendering
    ═══════════════════════════════════════════════════════════════════ */
 
@@ -209,17 +194,7 @@ const loadChatHistory = (autoScroll = true) => {
     
     messageElements.clear();
 
-    let currentDateKey = '';
-
     CHAT_HISTORY.forEach((msg) => {
-        const dateKey = getDateKey(msg.timestamp);
-
-        // Insert date separator when the day changes
-        if (dateKey !== currentDateKey) {
-            currentDateKey = dateKey;
-            addDateSeparator(formatDate(msg.timestamp));
-        }
-
         renderMessage(msg);
     });
 
@@ -459,15 +434,7 @@ const searchMessages = async (query) => {
         if (bgEmoji) messagesContainer.appendChild(bgEmoji);
         messageElements.clear();
 
-        let currentDateKey = '';
-
         searchResults.forEach((msg) => {
-            const dateKey = getDateKey(msg.timestamp);
-            if (dateKey !== currentDateKey) {
-                currentDateKey = dateKey;
-                addDateSeparator(formatDate(msg.timestamp));
-            }
-
             renderMessage(msg);
             
             // Highlight
@@ -592,48 +559,11 @@ const hideTypingIndicator = () => {
  * Handle incoming messages from the server.
  */
 socket.on('receive_message', (msg) => {
-    // Check if we need a date separator
-    const existingMessages = messagesContainer.querySelectorAll('.message-wrapper');
-    if (existingMessages.length > 0) {
-        const lastMsg = existingMessages[existingMessages.length - 1];
-        const lastMsgId = parseInt(lastMsg.dataset.messageId);
-        // Find the last message in history for date comparison
-        const lastHistoryMsg = CHAT_HISTORY.length > 0
-            ? CHAT_HISTORY[CHAT_HISTORY.length - 1]
-            : null;
-
-        const lastDateKey = lastHistoryMsg ? getDateKey(lastHistoryMsg.timestamp) : '';
-        const newDateKey = getDateKey(msg.timestamp);
-
-        if (lastDateKey && newDateKey && newDateKey !== lastDateKey) {
-            addDateSeparator(formatDate(msg.timestamp));
-        }
-    } else {
-        addDateSeparator(formatDate(msg.timestamp));
-    }
-
     // Add to local history
     CHAT_HISTORY.push(msg);
     currentOffset += 1;
 
     if (!isSearching) {
-        // Check if we need a date separator
-        const existingMessages = messagesContainer.querySelectorAll('.message-wrapper');
-        if (existingMessages.length > 0) {
-            const lastHistoryMsg = CHAT_HISTORY.length > 1
-                ? CHAT_HISTORY[CHAT_HISTORY.length - 2]
-                : null;
-
-            const lastDateKey = lastHistoryMsg ? getDateKey(lastHistoryMsg.timestamp) : '';
-            const newDateKey = getDateKey(msg.timestamp);
-
-            if (lastDateKey && newDateKey && newDateKey !== lastDateKey) {
-                addDateSeparator(formatDate(msg.timestamp));
-            }
-        } else {
-            addDateSeparator(formatDate(msg.timestamp));
-        }
-
         renderMessage(msg, true);
         scrollToBottom(true);
     }

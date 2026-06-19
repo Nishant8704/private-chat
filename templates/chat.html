@@ -20,8 +20,9 @@
                 <span id="status-dot" class="hidden online"></span> <!-- Hidden element for call.js logic -->
             </div>
             <div class="terminal-header-actions">
-                <button id="audio-call-btn" class="terminal-btn">[AUDIO CALL]</button>
-                <button id="video-call-btn" class="terminal-btn">[VIDEO CALL]</button>
+                <button id="audio-call-btn" class="terminal-btn">[AUDIO]</button>
+                <button id="video-call-btn" class="terminal-btn">[VIDEO]</button>
+                <button id="settings-btn" class="terminal-btn">[SETTINGS]</button>
                 <a href="{{ url_for('logout') }}" class="terminal-btn">[LOGOUT]</a>
             </div>
         </header>
@@ -82,6 +83,43 @@
                     <button id="camera-btn" class="terminal-btn">[CAMERA]</button>
                     <button id="end-call-btn" class="terminal-btn">[END CALL]</button>
                 </div>
+            </div>
+        </div>
+
+        <!-- ===== Settings Modal ===== -->
+        <div class="terminal-modal" id="settings-modal">
+            <div class="terminal-modal-content">
+                <p>> SETTINGS MENU</p>
+                <div class="terminal-divider">-------------------------</div>
+                <div id="settings-success" class="terminal-success"></div>
+                <div id="settings-error" class="terminal-error"></div>
+                
+                <p>> CHANGE USERNAME</p>
+                <div class="terminal-form-group">
+                    <label>new_user: </label>
+                    <input type="text" id="new-username" class="terminal-input" placeholder="...">
+                </div>
+                <div class="terminal-form-group">
+                    <label>password: </label>
+                    <input type="password" id="username-password" class="terminal-input" placeholder="...">
+                </div>
+                <button id="change-username-btn" class="terminal-btn">> EXECUTE_NAME_CHANGE</button>
+                
+                <div class="terminal-divider">-------------------------</div>
+                
+                <p>> CHANGE PASSWORD</p>
+                <div class="terminal-form-group">
+                    <label>old_pass: </label>
+                    <input type="password" id="current-password" class="terminal-input" placeholder="...">
+                </div>
+                <div class="terminal-form-group">
+                    <label>new_pass: </label>
+                    <input type="password" id="new-password" class="terminal-input" placeholder="...">
+                </div>
+                <button id="change-password-btn" class="terminal-btn">> EXECUTE_PASS_CHANGE</button>
+
+                <div class="terminal-divider">-------------------------</div>
+                <button id="settings-close-btn" class="terminal-btn">[CLOSE]</button>
             </div>
         </div>
     </div>

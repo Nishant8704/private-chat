@@ -279,6 +279,43 @@ a:hover, button:hover {
     margin-bottom: 10px;
 }
 
+.terminal-divider {
+    margin: 10px 0;
+    color: var(--text-dim);
+}
+
+.terminal-form-group {
+    display: flex;
+    margin-bottom: 10px;
+    align-items: center;
+}
+
+.terminal-form-group label {
+    width: 100px;
+}
+
+.terminal-form-group input {
+    flex: 1;
+}
+
+.terminal-success, .terminal-error {
+    display: none;
+    margin-bottom: 10px;
+    font-weight: bold;
+}
+
+.terminal-success.show, .terminal-error.show {
+    display: block;
+}
+
+.terminal-success {
+    color: #00ff00;
+}
+
+.terminal-error {
+    color: #ff3333;
+}
+
 .terminal-modal-actions {
     display: flex;
     gap: 10px;
