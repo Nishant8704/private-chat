@@ -773,6 +773,27 @@ img {
         url("data:image/svg+xml,%3Csvg width='60' height='60' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M30 5l2 4-2 4-2-4zm-15 8l4 2-4 2-2-4zm30 0l2 4-4 2 4-2zm-30 15l4 2-4 2-2-4zm15 0l2 4-2 4-2-4zm15 0l2 4-4 2 4-2zm-30 15l4 2-4 2-2-4zm15 0l2 4-2 4-2-4zm15 0l2 4-4 2 4-2z' fill='%23ffffff' fill-opacity='0.012' fill-rule='evenodd'/%3E%3C/svg%3E");
 }
 
+/* --- Background Emoji --- */
+.bg-emoji {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(0.8);
+    font-size: 50vh;
+    opacity: 0;
+    pointer-events: none;
+    z-index: 0;
+    transition: opacity 0.8s ease, transform 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    user-select: none;
+    filter: drop-shadow(0 0 20px rgba(255, 255, 255, 0.1));
+    text-align: center;
+}
+
+.bg-emoji.show {
+    opacity: 0.06;
+    transform: translate(-50%, -50%) scale(1);
+}
+
 /* --- Date Separator --- */
 .date-separator {
     display: flex;

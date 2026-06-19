@@ -8,6 +8,7 @@ read receipts, emoji support, message deletion, and profile picture uploads.
 
 import os
 import html
+import re
 from datetime import datetime, timezone
 from functools import wraps
 
@@ -34,6 +35,33 @@ socketio = SocketIO(app, cors_allowed_origins='*', async_mode='eventlet')
 
 # Track currently connected users: {username: socket_session_id}
 online_users = {}
+
+# Counter to track messages for periodic vibe analysis
+message_counter = 0
+
+# ---------------------------------------------------------------------------
+# Background Vibe Emoji Logic
+# ---------------------------------------------------------------------------
+VIBE_KEYWORDS = {
+    'happy': '😀', 'glad': '😀', 'yay': '😀', 'awesome': '😀',
+    'sad': '😢', 'bad': '😢', 'sorry': '😢', 'cry': '😢',
+    'angry': '😡', 'mad': '😡', 'hate': '😡', 'furious': '😡',
+    'love': '❤️', 'beautiful': '❤️', 'sweet': '❤️', 'cute': '❤️',
+    'funny': '😂', 'lol': '😂', 'lmao': '😂', 'haha': '😂',
+    'sleep': '😴', 'tired': '😴', 'night': '😴', 'bed': '😴',
+    'food': '🍕', 'hungry': '🍕', 'eat': '🍕', 'lunch': '🍕', 'dinner': '🍕',
+    'coffee': '☕', 'morning': '☕', 'tea': '☕',
+    'party': '🎉', 'celebrate': '🎉', 'woo': '🎉', 'congrats': '🎉',
+    'hi': '👋', 'hello': '👋', 'hey': '👋', 'bye': '👋',
+}
+
+def analyze_vibe(messages):
+    """Analyze the last few messages and return a matching vibe emoji."""
+    text = " ".join([m['message'] for m in messages]).lower()
+    for word, emoji in VIBE_KEYWORDS.items():
+        if re.search(rf'\b{word}\b', text):
+            return emoji
+    return ''
 
 
 # ---------------------------------------------------------------------------
@@ -380,6 +408,15 @@ def handle_send_message(data):
 
     # Broadcast to all connected clients (both sender and receiver)
     emit('receive_message', msg, broadcast=True)
+
+    # Periodic vibe analysis
+    global message_counter
+    message_counter += 1
+    if message_counter % 3 == 0:
+        recent_msgs = models.get_chat_history(username, receiver)[-3:]
+        vibe_emoji = analyze_vibe(recent_msgs)
+        if vibe_emoji:
+            emit('update_background_emoji', {'emoji': vibe_emoji}, broadcast=True)
 
 
 @socketio.on('typing')

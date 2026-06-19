@@ -662,6 +662,27 @@ socket.on('message_deleted', (data) => {
     if (msg) msg.is_deleted = 1;
 });
 
+/**
+ * Handle background vibe emoji updates.
+ */
+socket.on('update_background_emoji', (data) => {
+    const bgEmoji = document.getElementById('bg-emoji');
+    if (bgEmoji) {
+        // Only update if it's different to avoid flashing
+        if (bgEmoji.textContent !== data.emoji) {
+            bgEmoji.classList.remove('show');
+            setTimeout(() => {
+                if (data.emoji) {
+                    bgEmoji.textContent = data.emoji;
+                    bgEmoji.classList.add('show');
+                } else {
+                    bgEmoji.textContent = '';
+                }
+            }, 800); // Wait for fade out
+        }
+    }
+});
+
 /* ═══════════════════════════════════════════════════════════════════
    § 16. DOM Event Listeners
    ═══════════════════════════════════════════════════════════════════ */
