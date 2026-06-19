@@ -62,8 +62,10 @@ def init_db():
             timestamp TEXT NOT NULL,
             is_read INTEGER DEFAULT 0,
             is_deleted INTEGER DEFAULT 0,
+            replied_to_id INTEGER,
             FOREIGN KEY (sender) REFERENCES users(username),
-            FOREIGN KEY (receiver) REFERENCES users(username)
+            FOREIGN KEY (receiver) REFERENCES users(username),
+            FOREIGN KEY (replied_to_id) REFERENCES messages(id)
         )
     ''')
 
@@ -106,7 +108,7 @@ def verify_password(username, password):
     return check_password_hash(user['password_hash'], password)
 
 
-def save_message(sender, receiver, message):
+def save_message(sender, receiver, message, replied_to_id=None):
     """
     Save a new message to the database.
 
@@ -114,6 +116,7 @@ def save_message(sender, receiver, message):
         sender (str): Username of the message sender.
         receiver (str): Username of the message receiver.
         message (str): The message content.
+        replied_to_id (int, optional): ID of the message being replied to.
 
     Returns:
         dict: The complete message record including id and timestamp.
@@ -121,8 +124,8 @@ def save_message(sender, receiver, message):
     timestamp = datetime.now(timezone.utc).strftime('%Y-%m-%d %H:%M:%S')
     conn = get_db()
     cursor = conn.execute(
-        'INSERT INTO messages (sender, receiver, message, timestamp) VALUES (?, ?, ?, ?)',
-        (sender, receiver, message, timestamp)
+        'INSERT INTO messages (sender, receiver, message, timestamp, replied_to_id) VALUES (?, ?, ?, ?, ?)',
+        (sender, receiver, message, timestamp, replied_to_id)
     )
     message_id = cursor.lastrowid
     conn.commit()
@@ -135,7 +138,10 @@ def save_message(sender, receiver, message):
         'message': message,
         'timestamp': timestamp,
         'is_read': False,
-        'is_deleted': False
+        'is_deleted': False,
+        'replied_to_id': replied_to_id,
+        'replied_to_text': None,
+        'replied_to_sender': None
     }
 
 
@@ -156,10 +162,12 @@ def get_chat_history(user1, user2, limit=50, offset=0):
     """
     conn = get_db()
     messages = conn.execute(
-        '''SELECT * FROM messages
-           WHERE ((sender = ? AND receiver = ?) OR (sender = ? AND receiver = ?))
-           AND is_deleted = 0
-           ORDER BY timestamp DESC
+        '''SELECT m1.*, m2.message as replied_to_text, m2.sender as replied_to_sender
+           FROM messages m1
+           LEFT JOIN messages m2 ON m1.replied_to_id = m2.id
+           WHERE ((m1.sender = ? AND m1.receiver = ?) OR (m1.sender = ? AND m1.receiver = ?))
+           AND m1.is_deleted = 0
+           ORDER BY m1.timestamp DESC
            LIMIT ? OFFSET ?''',
         (user1, user2, user2, user1, limit, offset)
     ).fetchall()
@@ -234,11 +242,13 @@ def search_messages(user1, user2, query):
     """
     conn = get_db()
     messages = conn.execute(
-        '''SELECT * FROM messages
-           WHERE ((sender = ? AND receiver = ?) OR (sender = ? AND receiver = ?))
-           AND is_deleted = 0
-           AND message LIKE ?
-           ORDER BY timestamp ASC''',
+        '''SELECT m1.*, m2.message as replied_to_text, m2.sender as replied_to_sender
+           FROM messages m1
+           LEFT JOIN messages m2 ON m1.replied_to_id = m2.id
+           WHERE ((m1.sender = ? AND m1.receiver = ?) OR (m1.sender = ? AND m1.receiver = ?))
+           AND m1.is_deleted = 0
+           AND m1.message LIKE ?
+           ORDER BY m1.timestamp ASC''',
         (user1, user2, user2, user1, f'%{query}%')
     ).fetchall()
     conn.close()

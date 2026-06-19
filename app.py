@@ -418,12 +418,22 @@ def handle_send_message(data):
 
     # Sanitize the message to prevent XSS
     message_text = sanitize_input(message_text)
+    replied_to_id = data.get('replied_to_id')
 
     # Determine the receiver (the other user)
     receiver = get_other_user(username)
 
     # Save to database and get the complete message record
-    msg = models.save_message(username, receiver, message_text)
+    msg = models.save_message(username, receiver, message_text, replied_to_id)
+    
+    # Populate replied_to fields if it's a reply
+    if replied_to_id:
+        conn = models.get_db()
+        replied_msg = conn.execute('SELECT sender, message FROM messages WHERE id = ?', (replied_to_id,)).fetchone()
+        conn.close()
+        if replied_msg:
+            msg['replied_to_sender'] = replied_msg['sender']
+            msg['replied_to_text'] = replied_msg['message']
 
     # Broadcast to all connected clients (both sender and receiver)
     emit('receive_message', msg, broadcast=True)

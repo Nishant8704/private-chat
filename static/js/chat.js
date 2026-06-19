@@ -156,6 +156,28 @@ const renderMessage = (msg, animate = false) => {
     wrapper.dataset.messageId = msg.id;
     if (animate) wrapper.classList.add('animate');
 
+    // Create Actions Container
+    const actions = document.createElement('div');
+    actions.className = 'message-actions';
+    
+    // Reply Button
+    const replyBtn = document.createElement('button');
+    replyBtn.className = 'action-btn reply-btn';
+    replyBtn.title = 'Reply';
+    replyBtn.innerHTML = '↩️';
+    replyBtn.onclick = (e) => { e.stopPropagation(); initReply(msg.id, msg.message, msg.sender); };
+    actions.appendChild(replyBtn);
+
+    if (isSent) {
+        // Delete Button
+        const delBtn = document.createElement('button');
+        delBtn.className = 'action-btn delete-btn';
+        delBtn.title = 'Delete';
+        delBtn.innerHTML = '🗑️';
+        delBtn.onclick = (e) => { e.stopPropagation(); deleteMessage(msg.id); };
+        actions.appendChild(delBtn);
+    }
+
     const bubble = document.createElement('div');
     bubble.className = `message-bubble ${isSent ? 'sent' : 'received'}`;
 
@@ -172,36 +194,32 @@ const renderMessage = (msg, animate = false) => {
                 statusHtml = `<span class="message-status" title="Sent">✓</span>`;
             }
         }
+        
+        // Build Quoted block if reply
+        let quotedHtml = '';
+        if (msg.replied_to_id && msg.replied_to_text) {
+            const senderName = msg.replied_to_sender === CURRENT_USER ? 'You' : msg.replied_to_sender;
+            // Removed onclick for scrollToMessage to keep it simple, or can implement later
+            quotedHtml = `
+                <div class="quoted-message">
+                    <div class="quoted-sender">${escapeHtml(senderName)}</div>
+                    <div class="quoted-text">${escapeHtml(msg.replied_to_text)}</div>
+                </div>
+            `;
+        }
 
         bubble.innerHTML = `
+            ${quotedHtml}
             <span class="message-text">${escapeHtml(msg.message)}</span>
             <span class="message-meta">
                 <span class="message-time">${formatTime(msg.timestamp)}</span>
                 ${statusHtml}
             </span>
         `;
-
-        // Add delete button for own non-deleted messages
-        if (isSent) {
-            const deleteBtn = document.createElement('button');
-            deleteBtn.className = 'delete-btn';
-            deleteBtn.title = 'Delete message';
-            deleteBtn.setAttribute('aria-label', 'Delete message');
-            deleteBtn.innerHTML = `
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="currentColor">
-                    <path d="M5.5 5.5A.5.5 0 016 6v6a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm2.5 0a.5.5 0 01.5.5v6a.5.5 0 01-1 0V6a.5.5 0 01.5-.5zm3 .5a.5.5 0 00-1 0v6a.5.5 0 001 0V6z"/>
-                    <path fill-rule="evenodd" d="M14.5 3a1 1 0 01-1 1H13v9a2 2 0 01-2 2H5a2 2 0 01-2-2V4h-.5a1 1 0 010-2H6a1 1 0 011-1h2a1 1 0 011 1h3.5a1 1 0 011 1zM4.118 4L4 4.059V13a1 1 0 001 1h6a1 1 0 001-1V4.059L11.882 4H4.118zM6 1.5a.5.5 0 01.5-.5h3a.5.5 0 010 1h-3a.5.5 0 01-.5-.5z"/>
-                </svg>
-            `;
-            deleteBtn.addEventListener('click', (e) => {
-                e.stopPropagation();
-                deleteMessage(msg.id);
-            });
-            wrapper.appendChild(deleteBtn);
-        }
     }
 
     wrapper.appendChild(bubble);
+    wrapper.appendChild(actions);
     messagesContainer.appendChild(wrapper);
 
     // Store reference for quick updates
@@ -246,6 +264,101 @@ const loadChatHistory = (autoScroll = true) => {
     });
 
     if (autoScroll) scrollToBottom();
+};
+
+/**
+ * Fetch older messages from the server when scrolling up.
+ */
+const fetchOlderMessages = async () => {
+    if (isLoadingMessages || !hasMoreMessages || isSearching) return;
+    isLoadingMessages = true;
+    
+    try {
+        const res = await fetch(`/api/messages?offset=${currentOffset}&limit=${BATCH_SIZE}`);
+        const olderMessages = await res.json();
+        
+        if (olderMessages.length > 0) {
+            const oldScrollHeight = messagesContainer.scrollHeight;
+            const oldScrollTop = messagesContainer.scrollTop;
+            
+            // Prepend older messages to CHAT_HISTORY
+            CHAT_HISTORY.unshift(...olderMessages);
+            currentOffset += olderMessages.length;
+            
+            // Re-render
+            loadChatHistory(false);
+            
+            // Restore scroll position
+            messagesContainer.scrollTop = (messagesContainer.scrollHeight - oldScrollHeight) + oldScrollTop;
+            
+            if (olderMessages.length < BATCH_SIZE) hasMoreMessages = false;
+        } else {
+            hasMoreMessages = false;
+        }
+    } catch (err) {
+        console.error("Failed to fetch older messages:", err);
+    } finally {
+        isLoadingMessages = false;
+    }
+};
+
+messagesContainer.addEventListener('scroll', () => {
+    if (messagesContainer.scrollTop <= 50) {
+        fetchOlderMessages();
+    }
+});
+
+/* ═══════════════════════════════════════════════════════════════════
+   § 9. Reply Logic
+   ═══════════════════════════════════════════════════════════════════ */
+
+let currentReplyToId = null;
+const replyContext = document.getElementById('reply-context');
+const replyContextSender = document.getElementById('reply-context-sender');
+const replyContextText = document.getElementById('reply-context-text');
+const cancelReplyBtn = document.getElementById('cancel-reply-btn');
+
+const initReply = (id, text, sender) => {
+    currentReplyToId = id;
+    replyContextSender.textContent = sender === CURRENT_USER ? 'You' : sender;
+    replyContextText.textContent = text;
+    replyContext.classList.remove('hidden');
+    messageInput.focus();
+};
+
+const cancelReply = () => {
+    currentReplyToId = null;
+    replyContext.classList.add('hidden');
+};
+
+if (cancelReplyBtn) {
+    cancelReplyBtn.addEventListener('click', cancelReply);
+}
+
+/* ═══════════════════════════════════════════════════════════════════
+   § 10. Sending & Formatting
+   ═══════════════════════════════════════════════════════════════════ */
+
+/**
+ * Gather input text and emit the send_message event.
+ */
+const sendMessage = () => {
+    const text = messageInput.value.trim();
+    if (!text) return;
+
+    const data = { message: text };
+    if (currentReplyToId) {
+        data.replied_to_id = currentReplyToId;
+    }
+
+    socket.emit('send_message', data);
+
+    messageInput.value = '';
+    messageInput.style.height = 'auto'; // Reset textarea height
+    isTyping = false;
+    socket.emit('stop_typing');
+    cancelReply();
+    messageInput.focus();
 };
 
 /**
@@ -717,9 +830,9 @@ socket.on('message_deleted', (data) => {
         bubble.innerHTML = `<span class="message-deleted">🚫 This message was deleted</span>`;
     }
 
-    // Remove delete button if present
-    const deleteBtn = el.querySelector('.delete-btn');
-    if (deleteBtn) deleteBtn.remove();
+    // Remove actions container if present
+    const actions = el.querySelector('.message-actions');
+    if (actions) actions.remove();
 
     // Update local history
     const msg = CHAT_HISTORY.find((m) => m.id === data.message_id);
