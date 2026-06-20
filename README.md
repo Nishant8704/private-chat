@@ -1,8 +1,8 @@
-# 🔒 Private Chat
+# 📟 Private Chat: Terminal Edition
 
-### A secure, real-time chat application for two users
+### A secure, real-time retro chat application for two users
 
-> A beautifully designed, fully functional private chat website built for exactly **two users** — **Nishant** & **Friend**. Powered by Flask and WebSockets, it delivers a seamless real-time messaging experience with a sleek dark UI inspired by WhatsApp and Telegram.
+> A beautifully designed, fully functional private chat website built for exactly **two users** — **Nishant** & **Friend**. Powered by Flask, WebSockets, and SQLite, it delivers a seamless real-time messaging experience with a heavily stylized **Retro Hacker Terminal UI**.
 
 ![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python&logoColor=white)
 ![Flask](https://img.shields.io/badge/Flask-2.x-000000?style=for-the-badge&logo=flask&logoColor=white)
@@ -17,18 +17,17 @@
 | Feature | Description |
 |---------|-------------|
 | 💬 **Real-time Messaging** | Instant message delivery via WebSocket (Flask-SocketIO) |
-| 🟢 **Online/Offline Status** | See when the other user is online or offline |
-| ⌨️ **Typing Indicators** | Know when the other person is typing |
-| ✅ **Read Receipts** | Blue ticks (✓✓) when messages are read |
-| 🗑️ **Message Deletion** | Delete messages for everyone in the chat |
-| 😊 **Emoji Picker** | Built-in emoji picker for expressive conversations |
-| 🔍 **Message Search** | Search through your chat history instantly |
-| 🖼️ **Profile Picture Upload** | Upload and display custom profile pictures |
-| 💾 **Chat History Persistence** | All messages stored in SQLite — never lose a conversation |
-| 📱 **Responsive Design** | Works beautifully on mobile, tablet, and desktop |
-| 🌙 **Dark Modern UI** | Sleek dark theme inspired by WhatsApp & Telegram |
-| 🔐 **Session-based Auth** | Secure login with session management |
-| 🔑 **Password Hashing** | Passwords stored securely using Werkzeug hashing |
+| 📹 **Free Video & Audio Calls** | Bulletproof, no-login Discord-style calling via free Jitsi Meet integration |
+| 💻 **Retro Terminal UI** | Deep retro aesthetic featuring monospace fonts, ASCII dividers, and phosphor green colors |
+| 🟢 **Online/Offline Status** | See exactly when the other user connects or disconnects in real-time |
+| ⌨️ **Typing Indicators** | Console-style `> User is typing...` indicator |
+| ✅ **Read Receipts** | Terminal tags indicating `[SENT]` vs `[READ]` |
+| 🗑️ **Message Deletion** | Delete messages for everyone in the chat log |
+| 😊 **Emoji Picker** | Built-in terminal-styled emoji picker |
+| 🔍 **Database Query Search** | Search through your SQLite chat history instantly |
+| 🖼️ **Profile Settings** | Change username, passwords, and upload custom profile pictures dynamically |
+| 💾 **Persistent Chat Log** | All messages securely stored in an SQLite database file |
+| 🔐 **Strict Allowlist** | App strictly refuses registration to anyone not explicitly defined in `config.py` |
 
 ---
 
@@ -38,39 +37,39 @@
 |-----------|------------|
 | **Backend** | Python Flask |
 | **Real-time** | Flask-SocketIO |
+| **Calling** | Jitsi Meet External API (via Freifunk public instance) |
 | **Database** | SQLite |
-| **Frontend** | HTML, CSS, JavaScript |
-| **Authentication** | Werkzeug password hashing |
-| **Server** | Eventlet (async) |
+| **Frontend** | Vanilla HTML, CSS, JavaScript |
+| **Authentication** | Werkzeug secure password hashing |
 
 ---
 
 ## 📁 Project Structure
 
-```
+```text
 Chatting App/
 │
-├── app.py                     # Main Flask application & SocketIO events
-├── config.py                  # App configuration (secret key, allowed users)
+├── app.py                     # Main Flask application & SocketIO routes
+├── config.py                  # App configuration (secret key, STRICT allowed users)
 ├── requirements.txt           # Python dependencies
-├── render.yaml                # Render deployment blueprint
 ├── README.md                  # You are here!
 │
 ├── database/
-│   ├── init_db.py             # Database initialization & default user creation
+│   ├── init_db.py             # Script to initialize tables and users
 │   └── chat.db                # SQLite database (auto-generated)
 │
 ├── static/
 │   ├── css/
-│   │   └── style.css          # Dark theme styles & responsive layout
+│   │   └── style.css          # Retro terminal CSS styling
 │   ├── js/
-│   │   └── chat.js            # Client-side chat logic & SocketIO handlers
+│   │   ├── chat.js            # Real-time WebSocket messaging and UI logic
+│   │   └── call.js            # Video/Audio calling logic
 │   └── uploads/
-│       └── profile_pics/      # User-uploaded profile pictures
+│       └── profile_pics/      # Directory for user avatars
 │
 └── templates/
-    ├── login.html             # Login page template
-    └── chat.html              # Main chat interface template
+    ├── login.html             # Terminal login screen
+    └── chat.html              # Main terminal chat interface
 ```
 
 ---
@@ -100,7 +99,7 @@ source venv/bin/activate
 # 4. Install dependencies
 pip install -r requirements.txt
 
-# 5. Initialize the database (creates tables & default users)
+# 5. Initialize the database
 python database/init_db.py
 
 # 6. Run the application
@@ -111,147 +110,49 @@ python app.py
 ```
 
 > [!TIP]
-> To access from another device on the same network, use `http://<your-local-ip>:5000`
+> To test locally on multiple devices, connect both devices to the same Wi-Fi and navigate to `http://<your-local-ip>:5000`.
 
 ---
 
-## 🔑 Default Credentials
+## 🔑 Access & Configuration
 
-| User | Username | Password |
-|------|----------|----------|
-| 👤 User 1 | `Nishant` | `nishant123` |
-| 👤 User 2 | `Friend` | `friend123` |
+For maximum security, this app operates on a strict **allowlist**. Only usernames defined in `config.py` can register or exist.
 
-> [!WARNING]
-> **Change these passwords before deploying to production!**
-> Modify the credentials in `database/init_db.py` and re-run the initialization script.
+**Default Allowed Users:**
+- `Nishant`
+- `Friend`
 
----
-
-## 💬 Usage
-
-1. **Open two browser tabs** (or use two different devices on the same network)
-2. **Login as `Nishant`** in one tab
-3. **Login as `Friend`** in the other tab
-4. **Start chatting!** 🎉
-
-### Network Access
-
-To chat across devices on the same Wi-Fi network:
-
-```
-http://<your-local-ip>:5000
-```
-
-Find your local IP:
-- **Windows:** `ipconfig` → Look for IPv4 Address
-- **macOS/Linux:** `ifconfig` or `ip addr`
+### Changing the Allowed Users
+1. Edit the `ALLOWED_USERS` list inside `config.py`.
+2. Delete the `database/chat.db` file (if you want to wipe the slate clean).
+3. Run `python database/init_db.py` to regenerate the database schema with your new usernames.
 
 ---
 
-## ☁️ Deployment on Render (Free Hosting)
+## ☁️ Deployment on Render
 
-Deploy your private chat app to the cloud for free using [Render](https://render.com).
+This app is production-ready for free hosting services like Render.
 
-### Step-by-step Guide
+1. Create a Web Service on Render and attach your GitHub repository.
+2. Set the **Build Command**: `pip install -r requirements.txt && python database/init_db.py`
+3. Set the **Start Command**: `gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT app:app`
+4. **Environment Variables**: Add a random `SECRET_KEY`.
 
-1. **Push your code to GitHub**
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git remote add origin https://github.com/yourusername/private-chat.git
-   git push -u origin main
-   ```
+> [!IMPORTANT]  
+> If deploying to Render, **you MUST set your number of Gunicorn workers (`-w`) to `1`**. Because you are using local Socket.IO without a Redis backend, having multiple workers will cause real-time messages to randomly drop if users are connected to different workers.
 
-2. **Go to [render.com](https://render.com)** → Sign up / Log in
-
-3. **Create a New Web Service** → Connect your GitHub repository
-
-4. **Configure the service:**
-
-   | Setting | Value |
-   |---------|-------|
-   | **Name** | `private-chat` (or any name you like) |
-   | **Region** | Choose the closest to you |
-   | **Branch** | `main` |
-   | **Runtime** | `Python 3` |
-   | **Build Command** | `pip install -r requirements.txt && python database/init_db.py` |
-   | **Start Command** | `gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT app:app` |
-
-5. **Add Environment Variable:**
-
-   | Key | Value |
-   |-----|-------|
-   | `SECRET_KEY` | *(Generate a random string)* |
-
-6. **Click "Deploy"** and wait for the build to complete 🚀
-
-> [!NOTE]
-> Render's free tier spins down after inactivity. The first load may take **~30 seconds** to wake up.
-
-> [!IMPORTANT]
-> SQLite on Render is **ephemeral** — data resets on every redeploy. For persistent data, consider upgrading to Render's PostgreSQL add-on or using an external database service.
-
-### Render Blueprint (`render.yaml`)
-
-For one-click deployment, include this `render.yaml` in your project root:
-
-```yaml
-services:
-  - type: web
-    name: private-chat
-    runtime: python
-    buildCommand: pip install -r requirements.txt && python database/init_db.py
-    startCommand: gunicorn --worker-class eventlet -w 1 --bind 0.0.0.0:$PORT app:app
-    envVars:
-      - key: SECRET_KEY
-        generateValue: true
-      - key: PYTHON_VERSION
-        value: 3.11.0
-```
+> [!CAUTION]  
+> SQLite databases on free Render instances are **ephemeral** and will wipe on every redeployment. Consider attaching a persistent disk if you want to keep chat history permanently.
 
 ---
 
-## 🔒 Security Notes
+## 📞 Calling System Architecture
 
-| Aspect | Implementation |
-|--------|---------------|
-| **Password Storage** | Hashed using Werkzeug (bcrypt-based) — never stored in plain text |
-| **User Restriction** | Only two hardcoded users are allowed to register/login |
-| **Route Protection** | Session-based authentication protects all chat routes |
-| **XSS Prevention** | User input is sanitized to prevent cross-site scripting attacks |
-| **Secret Key** | Flask `SECRET_KEY` secures session cookies |
+The video/audio calling feature bypasses typical raw WebRTC limitations (like strict symmetric NATs and STUN/TURN server requirements) by integrating the completely free **Jitsi Meet API**.
 
-> [!CAUTION]
-> Always change the default `SECRET_KEY` before deploying to production. Use a strong, randomly generated string.
+When a user clicks `[VIDEO]`, the app does not send a fragile background signal. Instead, it drops a completely bulletproof `[JOIN 📹 CALL]` button directly into the chat history. The other user simply clicks the button to open a new tab directly to a private, randomized, no-login `meet.ffmuc.net` room.
 
----
-
-## 🎨 Customization
-
-### Change Passwords
-Edit `database/init_db.py`, update the password values, and re-run:
-```bash
-python database/init_db.py
-```
-
-### Change Usernames
-1. Edit `config.py` → Update the `ALLOWED_USERS` list
-2. Edit `database/init_db.py` → Update the user creation entries
-3. Re-run the init script
-
-### Change Theme Colors
-Edit `static/css/style.css` and modify the CSS custom properties (variables) at the top of the file:
-```css
-:root {
-    --primary-color: #00a884;      /* Accent / send button */
-    --bg-primary: #111b21;         /* Main background */
-    --bg-secondary: #202c33;       /* Sidebar / header */
-    --bg-chat: #0b141a;            /* Chat area background */
-    /* ... more variables */
-}
-```
+This ensures calls always connect perfectly regardless of deployment firewalls.
 
 ---
 
@@ -259,45 +160,11 @@ Edit `static/css/style.css` and modify the CSS custom properties (variables) at 
 
 This project is licensed under the **MIT License** — see the [LICENSE](LICENSE) file for details.
 
-```
-MIT License
-
-Copyright (c) 2026
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
-
----
-
-## 🙏 Acknowledgments
-
-- [**Flask**](https://flask.palletsprojects.com/) & [**Flask-SocketIO**](https://flask-socketio.readthedocs.io/) — for making real-time Python web apps possible
-- [**WhatsApp**](https://web.whatsapp.com/) & [**Telegram**](https://web.telegram.org/) — for UI/UX design inspiration
-- [**Eventlet**](https://eventlet.net/) — for async networking support
-- [**SQLite**](https://www.sqlite.org/) — for lightweight, serverless database storage
-
 ---
 
 <p align="center">
   Made with ❤️ by <strong>Nishant</strong>
 </p>
-
 <p align="center">
-  <em>Built for private conversations. Just you and your friend.</em>
+  <em>Terminal interface established. Connection secure.</em>
 </p>
